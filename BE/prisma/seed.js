@@ -913,6 +913,7 @@ async function main() {
 
   function buildImageUrls(product, category) {
     const categorySlug = String(product.categorySlug ?? category?.slug ?? "").toLowerCase();
+    const query = String(product.imageQuery ?? "").trim().toLowerCase();
     const tagMap = {
       cpu: "computer,cpu,processor",
       ram: "computer,ram,memory",
@@ -932,7 +933,7 @@ async function main() {
       pad: "mousepad,desk,gaming",
     };
 
-    const tags = tagMap[categorySlug] ?? "computer,hardware,desktop";
+    const tags = query || tagMap[categorySlug] || "computer,hardware,desktop";
     const baseLock = hashString(product.slug || product.name || `${categorySlug}-product`);
 
     return [1, 2, 3, 4].map((index) => {

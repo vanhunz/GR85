@@ -102,3 +102,20 @@ Mục mới nhất luôn được thêm ở cuối file.
     - Ưu tiên trả về `statusCode` từ lỗi service, đồng thời đính kèm `Retry-After` cho lỗi giới hạn tần suất.
   - **Lý do:**
     - Đảm bảo response HTTP đúng chuẩn và frontend nhận được thông báo chờ rõ ràng.
+
+## 2026-05-04 — Ảnh sản phẩm theo từng record + sửa trắng màn hình hồ sơ
+
+### Thay đổi đã thực hiện
+
+- **BE/prisma/seed.js**
+  - **Thay đổi gì:**
+    - Khi sinh ảnh seed cho sản phẩm, `buildImageUrls()` ưu tiên `product.imageQuery` riêng của từng sản phẩm thay vì chỉ dùng tag theo category.
+    - Các record `Product_Images` vì vậy sẽ bám sát từng sản phẩm cụ thể hơn, không còn dùng chung một bộ ảnh đại diện cho cả nhóm category.
+  - **Lý do:**
+    - Đảm bảo sản phẩm nào hiển thị đúng ảnh của sản phẩm đó khi seed lại hoặc cập nhật dữ liệu ảnh.
+
+- **FE/src/client/features/profile/pages/ProfilePage.jsx**
+  - **Thay đổi gì:**
+    - Xóa state khai báo trùng `showPendingOrders`.
+  - **Lý do:**
+    - Fix lỗi parse khiến màn hình trắng khi FE khởi động.

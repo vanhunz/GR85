@@ -100,7 +100,6 @@ export default function ProfilePage() {
   const [returnRequests, setReturnRequests] = useState([]);
   const [returnRequestsLoading, setReturnRequestsLoading] = useState(false);
   const [reorderingOrderId, setReorderingOrderId] = useState(null);
-  const [showPendingOrders, setShowPendingOrders] = useState(false);
   const [myReviews, setMyReviews] = useState([]);
   const [myReviewsLoading, setMyReviewsLoading] = useState(false);
   const [replyingReviewId, setReplyingReviewId] = useState(null);
