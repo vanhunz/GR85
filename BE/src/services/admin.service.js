@@ -165,9 +165,9 @@ export async function getAdminDashboard() {
     prisma.user.count(),
     prisma.order.count(),
     prisma.product.count(),
-    prisma.order.aggregate({ 
+    prisma.order.aggregate({
       _sum: { totalAmount: true },
-      where: { orderStatus: { in: ["PROCESSING", "SHIPPING", "DELIVERED"] } }
+      where: { orderStatus: { in: ["PROCESSING", "SHIPPING", "DELIVERED"] } },
     }),
     prisma.order.groupBy({
       by: ["orderStatus"],
@@ -482,6 +482,73 @@ export async function moderateReviewByAdmin(
     product: updated.product,
     action: isHidden ? "HIDE" : "UNHIDE",
     reason: isHidden ? hiddenReason || "" : unhideReason,
+  });
+
+  return serializeData(mapAdminReview(updated));
+}
+
+export async function moderateReviewImageByAdmin(
+  adminUserId,
+  reviewIdInput,
+  imageIdInput,
+  input = {},
+) {
+  const reviewId = Number(reviewIdInput);
+  const imageId = Number(imageIdInput);
+  const moderatorId = Number(adminUserId);
+  const approve = Boolean(input.approve);
+  const rejectionReason = String(input.rejectionReason ?? "").trim() || null;
+
+  if (!Number.isFinite(reviewId) || reviewId <= 0) {
+    throw new Error("Invalid review id");
+  }
+  if (!Number.isFinite(imageId) || imageId <= 0) {
+    throw new Error("Invalid image id");
+  }
+  if (!Number.isFinite(moderatorId) || moderatorId <= 0) {
+    throw new Error("Invalid admin id");
+  }
+
+  const existingReview = await prisma.review.findUnique({ where: { id: reviewId } });
+  if (!existingReview) {
+    throw new Error("Review not found");
+  }
+
+  const existingImage = await prisma.reviewImage.findUnique({ where: { id: imageId } });
+  if (!existingImage || Number(existingImage.reviewId) !== Number(reviewId)) {
+    throw new Error("Review image not found");
+  }
+
+  await prisma.reviewImage.update({
+    where: { id: imageId },
+    data: {
+      isApproved: approve,
+      moderatedBy: moderatorId,
+      moderatedAt: new Date(),
+      rejectionReason: approve ? null : rejectionReason,
+    },
+  });
+
+  // Return updated review for admin view
+  const updated = await prisma.review.findUnique({
+    where: { id: reviewId },
+    include: {
+      user: { select: { id: true, fullName: true, email: true } },
+      product: { select: { id: true, name: true, slug: true } },
+      moderator: { select: { id: true, fullName: true, email: true } },
+      replier: { select: { id: true, fullName: true, email: true } },
+      resolver: { select: { id: true, fullName: true, email: true } },
+      replies: { orderBy: { createdAt: "asc" }, take: 200, include: { sender: { select: { id: true, fullName: true, email: true } } } },
+      images: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
+    },
+  });
+
+  await createReviewModerationNotification({
+    userId: updated.userId,
+    reviewId: updated.id,
+    product: updated.product,
+    action: approve ? "IMAGE_APPROVED" : "IMAGE_REJECTED",
+    reason: rejectionReason || undefined,
   });
 
   return serializeData(mapAdminReview(updated));
@@ -1835,6 +1902,10 @@ function mapAdminReview(review) {
           id: image.id,
           imageUrl: String(image.imageUrl ?? ""),
           sortOrder: Number(image.sortOrder ?? 0),
+          isApproved: Boolean(image.isApproved),
+          moderatedBy: image.moderatedBy ?? null,
+          moderatedAt: image.moderatedAt ?? null,
+          rejectionReason: image.rejectionReason ?? null,
         }))
       : [],
     createdAt: review.createdAt,

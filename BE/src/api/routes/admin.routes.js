@@ -11,6 +11,7 @@ import {
   moderateReviewByAdmin,
   resolveReviewThreadByAdmin,
   replyReviewByAdmin,
+  moderateReviewImageByAdmin,
   getWarehouseOverviewByAdmin,
   getUserDetailByAdmin,
   listCouponsForAdmin,
@@ -89,6 +90,11 @@ const reviewModerationSchema = z.object({
 
 const reviewReplySchema = z.object({
   message: z.string().min(1).max(2000),
+});
+
+const moderateReviewImageSchema = z.object({
+  approve: z.boolean(),
+  rejectionReason: z.string().max(2000).optional(),
 });
 
 router.get("/users/:userId/detail", requireAuth, async (req, res) => {
@@ -253,10 +259,16 @@ router.get("/reviews", requireAuth, async (req, res) => {
 router.get("/categories", requireAuth, async (req, res) => {
   try {
     if (!isAdminRole(req.auth.role)) {
-      return res.status(403).json({ message: "Chi quan tri vien moi co the truy cap endpoint nay" });
+      return res
+        .status(403)
+        .json({
+          message: "Chi quan tri vien moi co the truy cap endpoint nay",
+        });
     }
     if (!canManageCategories(req)) {
-      return res.status(403).json({ message: "Ban khong co quyen thuc hien chuc nang nay" });
+      return res
+        .status(403)
+        .json({ message: "Ban khong co quyen thuc hien chuc nang nay" });
     }
 
     const parsed = categoryQuerySchema.parse(req.query);
@@ -274,10 +286,16 @@ router.get("/categories", requireAuth, async (req, res) => {
 router.post("/categories", requireAuth, async (req, res) => {
   try {
     if (!isAdminRole(req.auth.role)) {
-      return res.status(403).json({ message: "Chi quan tri vien moi co the truy cap endpoint nay" });
+      return res
+        .status(403)
+        .json({
+          message: "Chi quan tri vien moi co the truy cap endpoint nay",
+        });
     }
     if (!canManageCategories(req)) {
-      return res.status(403).json({ message: "Ban khong co quyen thuc hien chuc nang nay" });
+      return res
+        .status(403)
+        .json({ message: "Ban khong co quyen thuc hien chuc nang nay" });
     }
 
     const parsed = createCategorySchema.parse(req.body);
@@ -295,10 +313,16 @@ router.post("/categories", requireAuth, async (req, res) => {
 router.patch("/categories/:categoryId", requireAuth, async (req, res) => {
   try {
     if (!isAdminRole(req.auth.role)) {
-      return res.status(403).json({ message: "Chi quan tri vien moi co the truy cap endpoint nay" });
+      return res
+        .status(403)
+        .json({
+          message: "Chi quan tri vien moi co the truy cap endpoint nay",
+        });
     }
     if (!canManageCategories(req)) {
-      return res.status(403).json({ message: "Ban khong co quyen thuc hien chuc nang nay" });
+      return res
+        .status(403)
+        .json({ message: "Ban khong co quyen thuc hien chuc nang nay" });
     }
 
     const parsed = updateCategorySchema.parse(req.body);
@@ -316,10 +340,16 @@ router.patch("/categories/:categoryId", requireAuth, async (req, res) => {
 router.delete("/categories/:categoryId", requireAuth, async (req, res) => {
   try {
     if (!isAdminRole(req.auth.role)) {
-      return res.status(403).json({ message: "Chi quan tri vien moi co the truy cap endpoint nay" });
+      return res
+        .status(403)
+        .json({
+          message: "Chi quan tri vien moi co the truy cap endpoint nay",
+        });
     }
     if (!canManageCategories(req)) {
-      return res.status(403).json({ message: "Ban khong co quyen thuc hien chuc nang nay" });
+      return res
+        .status(403)
+        .json({ message: "Ban khong co quyen thuc hien chuc nang nay" });
     }
 
     const data = await removeCategoryByAdmin(req.params.categoryId);
@@ -370,6 +400,48 @@ router.patch("/reviews/:reviewId/moderate", requireAuth, async (req, res) => {
   }
 });
 
+router.patch(
+  "/reviews/:reviewId/images/:imageId/moderate",
+  requireAuth,
+  async (req, res) => {
+    try {
+      if (!isAdminRole(req.auth.role)) {
+        return res.status(403).json({
+          message: "Chỉ quản trị viên mới có thể truy cập endpoint này",
+        });
+      }
+      if (!hasPermission(req, "admin_reviews_manage")) {
+        return res
+          .status(403)
+          .json({ message: "Bạn không có quyền thực hiện chức năng này" });
+      }
+
+      const parsed = moderateReviewImageSchema.parse(req.body ?? {});
+      const data = await moderateReviewImageByAdmin(
+        Number(req.auth?.sub),
+        Number(req.params.reviewId),
+        Number(req.params.imageId),
+        parsed,
+      );
+      return res.json(data);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Dữ liệu yêu cầu không hợp lệ",
+          issues: error.flatten(),
+        });
+      }
+
+      if (error instanceof Error) {
+        const status = error.message.includes("not found") ? 404 : 400;
+        return res.status(status).json({ message: error.message });
+      }
+
+      return res.status(500).json({ message: "Lỗi máy chủ không xác định" });
+    }
+  },
+);
+
 router.post("/reviews/:reviewId/replies", requireAuth, async (req, res) => {
   try {
     if (!isAdminRole(req.auth.role)) {
@@ -378,15 +450,26 @@ router.post("/reviews/:reviewId/replies", requireAuth, async (req, res) => {
       });
     }
     if (!hasPermission(req, "admin_reviews_manage")) {
-      return res.status(403).json({ message: "Bạn không có quyền thực hiện chức năng này" });
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thực hiện chức năng này" });
     }
 
     const parsed = reviewReplySchema.parse(req.body ?? {});
-    const data = await replyReviewByAdmin(Number(req.auth?.sub), Number(req.params.reviewId), parsed);
+    const data = await replyReviewByAdmin(
+      Number(req.auth?.sub),
+      Number(req.params.reviewId),
+      parsed,
+    );
     return res.status(201).json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Dữ liệu yêu cầu không hợp lệ", issues: error.flatten() });
+      return res
+        .status(400)
+        .json({
+          message: "Dữ liệu yêu cầu không hợp lệ",
+          issues: error.flatten(),
+        });
     }
 
     if (error instanceof Error) {
@@ -401,14 +484,24 @@ router.post("/reviews/:reviewId/replies", requireAuth, async (req, res) => {
 router.patch("/reviews/:reviewId/moderation", requireAuth, async (req, res) => {
   try {
     if (!isAdminRole(req.auth.role)) {
-      return res.status(403).json({ message: "Chỉ quản trị viên mới có thể truy cập endpoint này" });
+      return res
+        .status(403)
+        .json({
+          message: "Chỉ quản trị viên mới có thể truy cập endpoint này",
+        });
     }
     if (!hasPermission(req, "admin_reviews_manage")) {
-      return res.status(403).json({ message: "Bạn không có quyền thực hiện chức năng này" });
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thực hiện chức năng này" });
     }
 
     const parsed = reviewModerationSchema.parse(req.body ?? {});
-    const data = await moderateProductReviewByAdmin(Number(req.auth?.sub), Number(req.params.reviewId), parsed);
+    const data = await moderateProductReviewByAdmin(
+      Number(req.auth?.sub),
+      Number(req.params.reviewId),
+      parsed,
+    );
     return res.json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -534,7 +627,9 @@ router.get("/reports", requireAuth, async (req, res) => {
       });
     }
     if (!hasPermission(req, "admin_dashboard_view")) {
-      return res.status(403).json({ message: "Bạn không có quyền thực hiện chức năng này" });
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thực hiện chức năng này" });
     }
 
     const data = await getAdminReports(req.query);
@@ -632,6 +727,37 @@ router.post("/coupons", requireAuth, async (req, res) => {
   }
 });
 
+router.patch("/coupons/:couponId", requireAuth, async (req, res) => {
+  try {
+    if (!isAdminRole(req.auth.role)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    if (!hasPermission(req, "admin_vouchers_manage")) {
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thực hiện chức năng này" });
+    }
+
+    const parsed = updateCouponSchema.parse(req.body ?? {});
+    const data = await updateCouponByAdmin(req.params.couponId, parsed);
+    return res.json(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Dữ liệu yêu cầu không hợp lệ",
+        issues: error.flatten(),
+      });
+    }
+
+    if (error instanceof Error) {
+      const status = error.message.includes("not found") ? 404 : 400;
+      return res.status(status).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: "Lỗi máy chủ không xác định" });
+  }
+});
+
 router.patch("/reviews/:reviewId/moderation", requireAuth, async (req, res) => {
   try {
     if (!isAdminRole(req.auth.role)) {
@@ -683,11 +809,20 @@ router.post("/reviews/:reviewId/replies", requireAuth, async (req, res) => {
     }
 
     const parsed = reviewReplySchema.parse(req.body ?? {});
-    const data = await replyReviewByAdmin(Number(req.auth?.sub), Number(req.params.reviewId), parsed);
+    const data = await replyReviewByAdmin(
+      Number(req.auth?.sub),
+      Number(req.params.reviewId),
+      parsed,
+    );
     return res.status(201).json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Dữ liệu yêu cầu không hợp lệ", issues: error.flatten() });
+      return res
+        .status(400)
+        .json({
+          message: "Dữ liệu yêu cầu không hợp lệ",
+          issues: error.flatten(),
+        });
     }
 
     if (error instanceof Error) {
@@ -707,15 +842,26 @@ router.patch("/reviews/:reviewId/reply", requireAuth, async (req, res) => {
       });
     }
     if (!hasPermission(req, "admin_reviews_manage")) {
-      return res.status(403).json({ message: "Bạn không có quyền thực hiện chức năng này" });
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thực hiện chức năng này" });
     }
 
     const parsed = reviewReplySchema.parse(req.body ?? {});
-    const data = await replyReviewByAdmin(Number(req.auth?.sub), Number(req.params.reviewId), parsed);
+    const data = await replyReviewByAdmin(
+      Number(req.auth?.sub),
+      Number(req.params.reviewId),
+      parsed,
+    );
     return res.status(201).json(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Dữ liệu yêu cầu không hợp lệ", issues: error.flatten() });
+      return res
+        .status(400)
+        .json({
+          message: "Dữ liệu yêu cầu không hợp lệ",
+          issues: error.flatten(),
+        });
     }
 
     if (error instanceof Error) {
@@ -934,33 +1080,37 @@ router.patch("/returns/:requestId/review", requireAuth, async (req, res) => {
   }
 });
 
-router.patch("/returns/:requestId/shipping-back", requireAuth, async (req, res) => {
-  try {
-    if (!isAdminRole(req.auth.role)) {
-      return res.status(403).json({
-        message: "Chỉ quản trị viên mới có thể truy cập endpoint này",
-      });
-    }
-    if (!hasPermission(req, "admin_orders_manage")) {
-      return res
-        .status(403)
-        .json({ message: "Bạn không có quyền thực hiện chức năng này" });
-    }
+router.patch(
+  "/returns/:requestId/shipping-back",
+  requireAuth,
+  async (req, res) => {
+    try {
+      if (!isAdminRole(req.auth.role)) {
+        return res.status(403).json({
+          message: "Chỉ quản trị viên mới có thể truy cập endpoint này",
+        });
+      }
+      if (!hasPermission(req, "admin_orders_manage")) {
+        return res
+          .status(403)
+          .json({ message: "Bạn không có quyền thực hiện chức năng này" });
+      }
 
-    const data = await markReturnAsShippingBack(
-      Number(req.auth?.sub),
-      Number(req.params.requestId),
-    );
-    return res.json(data);
-  } catch (error) {
-    if (error instanceof Error) {
-      const status = error.message.includes("not found") ? 404 : 400;
-      return res.status(status).json({ message: error.message });
-    }
+      const data = await markReturnAsShippingBack(
+        Number(req.auth?.sub),
+        Number(req.params.requestId),
+      );
+      return res.json(data);
+    } catch (error) {
+      if (error instanceof Error) {
+        const status = error.message.includes("not found") ? 404 : 400;
+        return res.status(status).json({ message: error.message });
+      }
 
-    return res.status(500).json({ message: "Lỗi máy chủ không xác định" });
-  }
-});
+      return res.status(500).json({ message: "Lỗi máy chủ không xác định" });
+    }
+  },
+);
 
 router.patch("/returns/:requestId/received", requireAuth, async (req, res) => {
   try {
@@ -1126,9 +1276,11 @@ router.patch("/roles/:roleId/permissions", requireAuth, async (req, res) => {
 // AI Admin Endpoints
 router.get("/ai-settings", requireAuth, async (req, res) => {
   try {
-    if (!isAdminRole(req.auth.role)) return res.status(403).json({ message: "Forbidden" });
-    if (!hasPermission(req, "admin_ai_build_manage")) return res.status(403).json({ message: "Forbidden" });
-    
+    if (!isAdminRole(req.auth.role))
+      return res.status(403).json({ message: "Forbidden" });
+    if (!hasPermission(req, "admin_ai_build_manage"))
+      return res.status(403).json({ message: "Forbidden" });
+
     const settings = await getAiSettings();
     return res.json(settings);
   } catch (error) {
@@ -1138,9 +1290,11 @@ router.get("/ai-settings", requireAuth, async (req, res) => {
 
 router.patch("/ai-settings", requireAuth, async (req, res) => {
   try {
-    if (!isAdminRole(req.auth.role)) return res.status(403).json({ message: "Forbidden" });
-    if (!hasPermission(req, "admin_ai_build_manage")) return res.status(403).json({ message: "Forbidden" });
-    
+    if (!isAdminRole(req.auth.role))
+      return res.status(403).json({ message: "Forbidden" });
+    if (!hasPermission(req, "admin_ai_build_manage"))
+      return res.status(403).json({ message: "Forbidden" });
+
     const schema = z.object({
       isEnabled: z.boolean().optional(),
       model: z.string().optional(),
@@ -1159,9 +1313,11 @@ router.patch("/ai-settings", requireAuth, async (req, res) => {
 
 router.get("/ai-logs", requireAuth, async (req, res) => {
   try {
-    if (!isAdminRole(req.auth.role)) return res.status(403).json({ message: "Forbidden" });
-    if (!hasPermission(req, "admin_ai_build_manage")) return res.status(403).json({ message: "Forbidden" });
-    
+    if (!isAdminRole(req.auth.role))
+      return res.status(403).json({ message: "Forbidden" });
+    if (!hasPermission(req, "admin_ai_build_manage"))
+      return res.status(403).json({ message: "Forbidden" });
+
     const logs = await listAiLogs(req.query);
     return res.json(logs);
   } catch (error) {
@@ -1171,9 +1327,11 @@ router.get("/ai-logs", requireAuth, async (req, res) => {
 
 router.delete("/ai-logs/:id", requireAuth, async (req, res) => {
   try {
-    if (!isAdminRole(req.auth.role)) return res.status(403).json({ message: "Forbidden" });
-    if (!hasPermission(req, "admin_ai_build_manage")) return res.status(403).json({ message: "Forbidden" });
-    
+    if (!isAdminRole(req.auth.role))
+      return res.status(403).json({ message: "Forbidden" });
+    if (!hasPermission(req, "admin_ai_build_manage"))
+      return res.status(403).json({ message: "Forbidden" });
+
     await deleteAiLog(req.params.id);
     return res.json({ success: true });
   } catch (error) {
@@ -1183,9 +1341,11 @@ router.delete("/ai-logs/:id", requireAuth, async (req, res) => {
 
 router.get("/ai-stats", requireAuth, async (req, res) => {
   try {
-    if (!isAdminRole(req.auth.role)) return res.status(403).json({ message: "Forbidden" });
-    if (!hasPermission(req, "admin_ai_build_manage")) return res.status(403).json({ message: "Forbidden" });
-    
+    if (!isAdminRole(req.auth.role))
+      return res.status(403).json({ message: "Forbidden" });
+    if (!hasPermission(req, "admin_ai_build_manage"))
+      return res.status(403).json({ message: "Forbidden" });
+
     const stats = await getAiStats();
     return res.json(stats);
   } catch (error) {

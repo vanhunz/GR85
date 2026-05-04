@@ -140,7 +140,9 @@ export async function getProductDetailBySlug(slug) {
 }
 
 export async function listProductReviewsBySlug(slug, input = {}) {
-  const normalizedSlug = String(slug ?? "").trim().toLowerCase();
+  const normalizedSlug = String(slug ?? "")
+    .trim()
+    .toLowerCase();
   const ratingFilter = Number(input.rating);
   if (!normalizedSlug) {
     throw new Error("Product slug is required");
@@ -160,8 +162,10 @@ export async function listProductReviewsBySlug(slug, input = {}) {
   const reviews = await prisma.review.findMany({
     where: {
       productId: product.id,
-  isHidden: false,
-      ...(Number.isInteger(ratingFilter) && ratingFilter >= 1 && ratingFilter <= 5
+      isHidden: false,
+      ...(Number.isInteger(ratingFilter) &&
+      ratingFilter >= 1 &&
+      ratingFilter <= 5
         ? { rating: ratingFilter }
         : {}),
     },
@@ -187,6 +191,7 @@ export async function listProductReviewsBySlug(slug, input = {}) {
         },
       },
       images: {
+        where: { isApproved: true },
         orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
       },
     },
@@ -226,6 +231,7 @@ export async function listProductReviewsBySlug(slug, input = {}) {
             id: image.id,
             imageUrl: String(image.imageUrl ?? ""),
             sortOrder: Number(image.sortOrder ?? 0),
+            isApproved: Boolean(image.isApproved),
           }))
         : [],
       thread: mapPublicReviewThread(review),
@@ -241,7 +247,9 @@ export async function listProductReviewsBySlug(slug, input = {}) {
         createdAt: reply.createdAt,
         user: {
           id: reply.sender.id,
-          fullName: String(reply.sender.fullName ?? "").trim() || String(reply.sender.email ?? "Ẩn danh"),
+          fullName:
+            String(reply.sender.fullName ?? "").trim() ||
+            String(reply.sender.email ?? "Ẩn danh"),
           role: reply.sender.role?.name ?? null,
         },
       })),
@@ -663,6 +671,7 @@ export async function createProductReviewBySlug(
             reviewId: createdReview.id,
             imageUrl: item.imageUrl,
             sortOrder: item.sortOrder,
+            isApproved: false,
           })),
         });
       }
@@ -801,16 +810,24 @@ export async function replyToProductReview(userId, reviewIdInput, input = {}) {
     createdAt: reply.createdAt,
     user: {
       id: reply.user.id,
-      fullName: String(reply.user.fullName ?? "").trim() || String(reply.user.email ?? "Ẩn danh"),
+      fullName:
+        String(reply.user.fullName ?? "").trim() ||
+        String(reply.user.email ?? "Ẩn danh"),
       role: reply.user.role?.name ?? null,
     },
   });
 }
 
-export async function moderateProductReviewByAdmin(adminUserId, reviewIdInput, input = {}) {
+export async function moderateProductReviewByAdmin(
+  adminUserId,
+  reviewIdInput,
+  input = {},
+) {
   const normalizedAdminId = Number(adminUserId);
   const reviewId = Number(reviewIdInput);
-  const action = String(input.action ?? "").trim().toUpperCase();
+  const action = String(input.action ?? "")
+    .trim()
+    .toUpperCase();
   const reason = String(input.reason ?? input.rejectReason ?? "").trim();
 
   if (!Number.isFinite(normalizedAdminId) || normalizedAdminId <= 0) {
@@ -908,7 +925,9 @@ export async function moderateProductReviewByAdmin(adminUserId, reviewIdInput, i
 function buildRatingBreakdown(reviews) {
   const total = Math.max(0, reviews.length);
   return [5, 4, 3, 2, 1].map((rating) => {
-    const count = reviews.filter((review) => Number(review.rating ?? 0) === rating).length;
+    const count = reviews.filter(
+      (review) => Number(review.rating ?? 0) === rating,
+    ).length;
     const percent = total > 0 ? Math.round((count / total) * 100) : 0;
     return { rating, count, percent };
   });

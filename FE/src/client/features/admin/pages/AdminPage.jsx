@@ -1561,6 +1561,52 @@ export default function AdminPage() {
     }
   }
 
+  async function moderateReviewImage(reviewId, imageId, approve, rejectionReason = "") {
+    if (!token || !reviewId || !imageId) {
+      return;
+    }
+
+    setModeratingReviewId(Number(reviewId));
+    try {
+      const response = await fetch(
+        `/api/admin/reviews/${reviewId}/images/${imageId}/moderate`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            approve: Boolean(approve),
+            rejectionReason: String(rejectionReason ?? "").trim() || undefined,
+          }),
+        },
+      );
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          payload?.message ?? "Không thể cập nhật trạng thái ảnh đánh giá",
+        );
+      }
+
+      setAdminReviews((prev) =>
+        prev.map((item) => (Number(item.id) === Number(reviewId) ? payload : item)),
+      );
+      toast({
+        title: approve ? "Đã duyệt ảnh đánh giá" : "Đã từ chối ảnh đánh giá",
+      });
+    } catch (error) {
+      toast({
+        title: "Cập nhật ảnh đánh giá thất bại",
+        description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
+        variant: "destructive",
+      });
+    } finally {
+      setModeratingReviewId(null);
+    }
+  }
+
   const saveReviewReply = useCallback(async (reviewId) => {
     if (!token || !reviewId) {
       return;
@@ -7237,6 +7283,91 @@ export default function AdminPage() {
                                 "Không có nội dung đánh giá"}
                             </p>
                           </div>
+
+                          {Array.isArray(selectedReview.images) && selectedReview.images.length > 0 ? (
+                            <div className="space-y-3 rounded-2xl border border-border/60 bg-white p-4 shadow-sm">
+                              <div className="flex items-center justify-between gap-2">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    Ảnh đánh giá
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Duyệt ảnh trước khi hiển thị công khai
+                                  </p>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {selectedReview.images.length} ảnh
+                                </span>
+                              </div>
+
+                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                {selectedReview.images.map((image) => (
+                                  <div key={image.id} className="overflow-hidden rounded-xl border border-border/60 bg-background shadow-sm">
+                                    <a href={image.imageUrl} target="_blank" rel="noreferrer">
+                                      <img
+                                        src={image.imageUrl}
+                                        alt="Ảnh đánh giá"
+                                        className="h-40 w-full object-cover"
+                                      />
+                                    </a>
+                                    <div className="space-y-2 p-3 text-xs">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="font-medium">
+                                          {image.isApproved ? "Đã duyệt" : "Chờ duyệt"}
+                                        </span>
+                                        {image.rejectionReason ? (
+                                          <span className="text-rose-600">Từ chối</span>
+                                        ) : null}
+                                      </div>
+                                      {image.rejectionReason ? (
+                                        <p className="text-muted-foreground">
+                                          Lý do: {image.rejectionReason}
+                                        </p>
+                                      ) : null}
+                                      <div className="flex flex-wrap gap-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          disabled={moderatingReviewId === Number(selectedReview.id)}
+                                          onClick={() =>
+                                            moderateReviewImage(
+                                              selectedReview.id,
+                                              image.id,
+                                              true,
+                                            )
+                                          }
+                                        >
+                                          Duyệt
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          disabled={moderatingReviewId === Number(selectedReview.id)}
+                                          onClick={() => {
+                                            const reason = window.prompt(
+                                              "Nhập lý do từ chối ảnh (không bắt buộc):",
+                                              String(image.rejectionReason ?? ""),
+                                            );
+                                            if (reason === null) {
+                                              return;
+                                            }
+                                            moderateReviewImage(
+                                              selectedReview.id,
+                                              image.id,
+                                              false,
+                                              reason,
+                                            );
+                                          }}
+                                        >
+                                          Từ chối
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
 
                           <div className="grid gap-2 rounded-xl border border-border/60 bg-slate-50 p-3 text-xs text-muted-foreground md:grid-cols-2">
                             <div>

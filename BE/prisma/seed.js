@@ -912,8 +912,12 @@ async function main() {
   }
 
   function buildImageUrls(product, category) {
-    const categorySlug = String(product.categorySlug ?? category?.slug ?? "").toLowerCase();
-    const query = String(product.imageQuery ?? "").trim().toLowerCase();
+    const categorySlug = String(
+      product.categorySlug ?? category?.slug ?? "",
+    ).toLowerCase();
+    const query = String(product.imageQuery ?? "")
+      .trim()
+      .toLowerCase();
     const tagMap = {
       cpu: "computer,cpu,processor",
       ram: "computer,ram,memory",
@@ -934,7 +938,9 @@ async function main() {
     };
 
     const tags = query || tagMap[categorySlug] || "computer,hardware,desktop";
-    const baseLock = hashString(product.slug || product.name || `${categorySlug}-product`);
+    const baseLock = hashString(
+      product.slug || product.name || `${categorySlug}-product`,
+    );
 
     return [1, 2, 3, 4].map((index) => {
       const lock = baseLock + index;
@@ -955,7 +961,9 @@ async function main() {
   function buildLongDescription(product, category, supplier) {
     const specs = Object.entries(product.specifications ?? {})
       .slice(0, 8)
-      .map(([key, value]) => `<li><strong>${key}</strong>: ${String(value)}</li>`)
+      .map(
+        ([key, value]) => `<li><strong>${key}</strong>: ${String(value)}</li>`,
+      )
       .join("");
 
     return `
@@ -977,10 +985,50 @@ async function main() {
       priceStep: 180000,
       brands: ["Dell", "LG", "ASUS", "AOC", "BenQ"],
       variants: [
-        { slug: "24-fhd-144hz", title: '24\" IPS FHD 144Hz', price: 3290000, specs: { size: '24\"', resolution: "1920x1080", panelType: "IPS", refreshRate: "144Hz" } },
-        { slug: "27-qhd-165hz", title: '27\" IPS QHD 165Hz', price: 4990000, specs: { size: '27\"', resolution: "2560x1440", panelType: "IPS", refreshRate: "165Hz" } },
-        { slug: "32-qhd-75hz", title: '32\" VA QHD 75Hz', price: 4490000, specs: { size: '32\"', resolution: "2560x1440", panelType: "VA", refreshRate: "75Hz" } },
-        { slug: "34-ultrawide-100hz", title: '34\" Ultrawide 100Hz', price: 8990000, specs: { size: '34\"', resolution: "3440x1440", panelType: "IPS", refreshRate: "100Hz" } },
+        {
+          slug: "24-fhd-144hz",
+          title: '24\" IPS FHD 144Hz',
+          price: 3290000,
+          specs: {
+            size: '24\"',
+            resolution: "1920x1080",
+            panelType: "IPS",
+            refreshRate: "144Hz",
+          },
+        },
+        {
+          slug: "27-qhd-165hz",
+          title: '27\" IPS QHD 165Hz',
+          price: 4990000,
+          specs: {
+            size: '27\"',
+            resolution: "2560x1440",
+            panelType: "IPS",
+            refreshRate: "165Hz",
+          },
+        },
+        {
+          slug: "32-qhd-75hz",
+          title: '32\" VA QHD 75Hz',
+          price: 4490000,
+          specs: {
+            size: '32\"',
+            resolution: "2560x1440",
+            panelType: "VA",
+            refreshRate: "75Hz",
+          },
+        },
+        {
+          slug: "34-ultrawide-100hz",
+          title: '34\" Ultrawide 100Hz',
+          price: 8990000,
+          specs: {
+            size: '34\"',
+            resolution: "3440x1440",
+            panelType: "IPS",
+            refreshRate: "100Hz",
+          },
+        },
       ],
     },
     {
@@ -991,10 +1039,30 @@ async function main() {
       priceStep: 90000,
       brands: ["Logitech", "Razer", "SteelSeries", "Corsair", "HyperX"],
       variants: [
-        { slug: "wireless-office", title: "Wireless Office Mouse", price: 1290000, specs: { dpi: "4000", buttons: "6", wireless: "Yes", weight: "95g" } },
-        { slug: "ambidextrous-gaming", title: "Ambidextrous Gaming Mouse", price: 1690000, specs: { dpi: "12000", buttons: "8", wireless: "No", weight: "85g" } },
-        { slug: "ultralight-pro", title: "Ultra-Light Mouse", price: 2890000, specs: { dpi: "26000", buttons: "8", wireless: "Yes", weight: "60g" } },
-        { slug: "trackball-ergonomic", title: "Ergonomic Trackball Mouse", price: 2190000, specs: { dpi: "3200", buttons: "7", wireless: "Yes", weight: "110g" } },
+        {
+          slug: "wireless-office",
+          title: "Wireless Office Mouse",
+          price: 1290000,
+          specs: { dpi: "4000", buttons: "6", wireless: "Yes", weight: "95g" },
+        },
+        {
+          slug: "ambidextrous-gaming",
+          title: "Ambidextrous Gaming Mouse",
+          price: 1690000,
+          specs: { dpi: "12000", buttons: "8", wireless: "No", weight: "85g" },
+        },
+        {
+          slug: "ultralight-pro",
+          title: "Ultra-Light Mouse",
+          price: 2890000,
+          specs: { dpi: "26000", buttons: "8", wireless: "Yes", weight: "60g" },
+        },
+        {
+          slug: "trackball-ergonomic",
+          title: "Ergonomic Trackball Mouse",
+          price: 2190000,
+          specs: { dpi: "3200", buttons: "7", wireless: "Yes", weight: "110g" },
+        },
       ],
     },
     {
@@ -1005,10 +1073,50 @@ async function main() {
       priceStep: 120000,
       brands: ["Corsair", "Keychron", "Razer", "SteelSeries", "Akko"],
       variants: [
-        { slug: "full-size-mechanical", title: "Mechanical Full-Size Keyboard", price: 2490000, specs: { switchType: "Mechanical", switches: "Cherry MX", rgb: "Yes", layout: "Full-size" } },
-        { slug: "tkl-hot-swap", title: "Hot-Swap TKL Keyboard", price: 2190000, specs: { switchType: "Mechanical", switches: "Hot-swap", rgb: "Yes", layout: "TKL" } },
-        { slug: "compact-65", title: "Compact 65% Keyboard", price: 1690000, specs: { switchType: "Mechanical", switches: "Gateron", rgb: "Yes", layout: "65%" } },
-        { slug: "wireless-low-profile", title: "Low-Profile Wireless Keyboard", price: 2990000, specs: { switchType: "Low-profile", switches: "Scissor", rgb: "No", layout: "75%" } },
+        {
+          slug: "full-size-mechanical",
+          title: "Mechanical Full-Size Keyboard",
+          price: 2490000,
+          specs: {
+            switchType: "Mechanical",
+            switches: "Cherry MX",
+            rgb: "Yes",
+            layout: "Full-size",
+          },
+        },
+        {
+          slug: "tkl-hot-swap",
+          title: "Hot-Swap TKL Keyboard",
+          price: 2190000,
+          specs: {
+            switchType: "Mechanical",
+            switches: "Hot-swap",
+            rgb: "Yes",
+            layout: "TKL",
+          },
+        },
+        {
+          slug: "compact-65",
+          title: "Compact 65% Keyboard",
+          price: 1690000,
+          specs: {
+            switchType: "Mechanical",
+            switches: "Gateron",
+            rgb: "Yes",
+            layout: "65%",
+          },
+        },
+        {
+          slug: "wireless-low-profile",
+          title: "Low-Profile Wireless Keyboard",
+          price: 2990000,
+          specs: {
+            switchType: "Low-profile",
+            switches: "Scissor",
+            rgb: "No",
+            layout: "75%",
+          },
+        },
       ],
     },
     {
@@ -1019,10 +1127,50 @@ async function main() {
       priceStep: 140000,
       brands: ["SteelSeries", "HyperX", "Corsair", "Logitech", "Razer"],
       variants: [
-        { slug: "over-ear-gaming", title: "Over-Ear Gaming Headset", price: 1590000, specs: { driverSize: "50mm", impedance: "32 Ohms", frequency: "20Hz - 20kHz", microphone: "Boom" } },
-        { slug: "studio-monitor", title: "Studio Monitor Headset", price: 2890000, specs: { driverSize: "40mm", impedance: "64 Ohms", frequency: "15Hz - 28kHz", microphone: "Detachable" } },
-        { slug: "wireless-anc", title: "Wireless ANC Headset", price: 3990000, specs: { driverSize: "40mm", impedance: "32 Ohms", frequency: "20Hz - 20kHz", microphone: "Yes" } },
-        { slug: "usb-streaming", title: "USB Streaming Headset", price: 2190000, specs: { driverSize: "50mm", impedance: "32 Ohms", frequency: "20Hz - 20kHz", microphone: "Retractable" } },
+        {
+          slug: "over-ear-gaming",
+          title: "Over-Ear Gaming Headset",
+          price: 1590000,
+          specs: {
+            driverSize: "50mm",
+            impedance: "32 Ohms",
+            frequency: "20Hz - 20kHz",
+            microphone: "Boom",
+          },
+        },
+        {
+          slug: "studio-monitor",
+          title: "Studio Monitor Headset",
+          price: 2890000,
+          specs: {
+            driverSize: "40mm",
+            impedance: "64 Ohms",
+            frequency: "15Hz - 28kHz",
+            microphone: "Detachable",
+          },
+        },
+        {
+          slug: "wireless-anc",
+          title: "Wireless ANC Headset",
+          price: 3990000,
+          specs: {
+            driverSize: "40mm",
+            impedance: "32 Ohms",
+            frequency: "20Hz - 20kHz",
+            microphone: "Yes",
+          },
+        },
+        {
+          slug: "usb-streaming",
+          title: "USB Streaming Headset",
+          price: 2190000,
+          specs: {
+            driverSize: "50mm",
+            impedance: "32 Ohms",
+            frequency: "20Hz - 20kHz",
+            microphone: "Retractable",
+          },
+        },
       ],
     },
     {
@@ -1033,10 +1181,50 @@ async function main() {
       priceStep: 80000,
       brands: ["Edifier", "JBL", "Bose", "Logitech", "Creative"],
       variants: [
-        { slug: "2-0-desktop", title: "2.0 Desktop Speaker", price: 1290000, specs: { power: "10W", frequency: "80Hz - 20kHz", connectivity: "3.5mm", wireless: "No" } },
-        { slug: "bluetooth-portable", title: "Bluetooth Portable Speaker", price: 1890000, specs: { power: "20W", frequency: "60Hz - 20kHz", connectivity: "Bluetooth, AUX", wireless: "Yes" } },
-        { slug: "bookshelf-pair", title: "Bookshelf Speaker Pair", price: 3290000, specs: { power: "42W", frequency: "50Hz - 20kHz", connectivity: "Bluetooth, AUX, USB", wireless: "Yes" } },
-        { slug: "rgb-gaming", title: "RGB Gaming Speaker", price: 990000, specs: { power: "12W", frequency: "70Hz - 20kHz", connectivity: "USB, 3.5mm", wireless: "No" } },
+        {
+          slug: "2-0-desktop",
+          title: "2.0 Desktop Speaker",
+          price: 1290000,
+          specs: {
+            power: "10W",
+            frequency: "80Hz - 20kHz",
+            connectivity: "3.5mm",
+            wireless: "No",
+          },
+        },
+        {
+          slug: "bluetooth-portable",
+          title: "Bluetooth Portable Speaker",
+          price: 1890000,
+          specs: {
+            power: "20W",
+            frequency: "60Hz - 20kHz",
+            connectivity: "Bluetooth, AUX",
+            wireless: "Yes",
+          },
+        },
+        {
+          slug: "bookshelf-pair",
+          title: "Bookshelf Speaker Pair",
+          price: 3290000,
+          specs: {
+            power: "42W",
+            frequency: "50Hz - 20kHz",
+            connectivity: "Bluetooth, AUX, USB",
+            wireless: "Yes",
+          },
+        },
+        {
+          slug: "rgb-gaming",
+          title: "RGB Gaming Speaker",
+          price: 990000,
+          specs: {
+            power: "12W",
+            frequency: "70Hz - 20kHz",
+            connectivity: "USB, 3.5mm",
+            wireless: "No",
+          },
+        },
       ],
     },
     {
@@ -1047,10 +1235,50 @@ async function main() {
       priceStep: 70000,
       brands: ["Logitech", "Razer", "ASUS", "AverMedia", "Dell"],
       variants: [
-        { slug: "1080p-autofocus", title: "1080p Autofocus Webcam", price: 1290000, specs: { resolution: "1080p Full HD", fps: "30fps", fieldOfView: "78°", autofocus: "Yes" } },
-        { slug: "2k-streaming", title: "2K Streaming Webcam", price: 1990000, specs: { resolution: "2K", fps: "60fps", fieldOfView: "82°", autofocus: "Yes" } },
-        { slug: "4k-creator", title: "4K Creator Webcam", price: 3490000, specs: { resolution: "4K", fps: "30fps", fieldOfView: "90°", autofocus: "Yes" } },
-        { slug: "ring-light", title: "Ring Light Webcam", price: 890000, specs: { resolution: "1080p Full HD", fps: "30fps", fieldOfView: "90°", autofocus: "No" } },
+        {
+          slug: "1080p-autofocus",
+          title: "1080p Autofocus Webcam",
+          price: 1290000,
+          specs: {
+            resolution: "1080p Full HD",
+            fps: "30fps",
+            fieldOfView: "78°",
+            autofocus: "Yes",
+          },
+        },
+        {
+          slug: "2k-streaming",
+          title: "2K Streaming Webcam",
+          price: 1990000,
+          specs: {
+            resolution: "2K",
+            fps: "60fps",
+            fieldOfView: "82°",
+            autofocus: "Yes",
+          },
+        },
+        {
+          slug: "4k-creator",
+          title: "4K Creator Webcam",
+          price: 3490000,
+          specs: {
+            resolution: "4K",
+            fps: "30fps",
+            fieldOfView: "90°",
+            autofocus: "Yes",
+          },
+        },
+        {
+          slug: "ring-light",
+          title: "Ring Light Webcam",
+          price: 890000,
+          specs: {
+            resolution: "1080p Full HD",
+            fps: "30fps",
+            fieldOfView: "90°",
+            autofocus: "No",
+          },
+        },
       ],
     },
     {
@@ -1061,10 +1289,50 @@ async function main() {
       priceStep: 90000,
       brands: ["Audio-Technica", "Shure", "Rode", "Elgato", "Blue"],
       variants: [
-        { slug: "usb-condenser", title: "USB Condenser Microphone", price: 1390000, specs: { type: "Condenser", pattern: "Cardioid", frequency: "20Hz - 20kHz", connection: "USB" } },
-        { slug: "xlr-dynamic", title: "XLR Dynamic Microphone", price: 2890000, specs: { type: "Dynamic", pattern: "Cardioid", frequency: "50Hz - 15kHz", connection: "XLR" } },
-        { slug: "podcast-condenser", title: "Podcast Condenser Microphone", price: 2490000, specs: { type: "Condenser", pattern: "Cardioid", frequency: "20Hz - 20kHz", connection: "XLR" } },
-        { slug: "usb-c-streaming", title: "Streaming USB-C Microphone", price: 1790000, specs: { type: "Condenser", pattern: "Cardioid", frequency: "20Hz - 20kHz", connection: "USB-C" } },
+        {
+          slug: "usb-condenser",
+          title: "USB Condenser Microphone",
+          price: 1390000,
+          specs: {
+            type: "Condenser",
+            pattern: "Cardioid",
+            frequency: "20Hz - 20kHz",
+            connection: "USB",
+          },
+        },
+        {
+          slug: "xlr-dynamic",
+          title: "XLR Dynamic Microphone",
+          price: 2890000,
+          specs: {
+            type: "Dynamic",
+            pattern: "Cardioid",
+            frequency: "50Hz - 15kHz",
+            connection: "XLR",
+          },
+        },
+        {
+          slug: "podcast-condenser",
+          title: "Podcast Condenser Microphone",
+          price: 2490000,
+          specs: {
+            type: "Condenser",
+            pattern: "Cardioid",
+            frequency: "20Hz - 20kHz",
+            connection: "XLR",
+          },
+        },
+        {
+          slug: "usb-c-streaming",
+          title: "Streaming USB-C Microphone",
+          price: 1790000,
+          specs: {
+            type: "Condenser",
+            pattern: "Cardioid",
+            frequency: "20Hz - 20kHz",
+            connection: "USB-C",
+          },
+        },
       ],
     },
     {
@@ -1075,10 +1343,50 @@ async function main() {
       priceStep: 30000,
       brands: ["ASUS", "Anker", "UGREEN", "Baseus", "Belkin"],
       variants: [
-        { slug: "hdmi-2-1", title: "HDMI 2.1 Cable", price: 190000, specs: { type: "HDMI 2.1", length: "2m", bandwidth: "48Gbps", color: "Black" } },
-        { slug: "displayport-1-4", title: "DisplayPort 1.4 Cable", price: 210000, specs: { type: "DisplayPort 1.4", length: "2m", bandwidth: "32.4Gbps", color: "Black" } },
-        { slug: "usb-c-100w", title: "USB-C 100W Cable", price: 160000, specs: { type: "USB-C", length: "1.5m", bandwidth: "10Gbps", color: "Gray" } },
-        { slug: "ethernet-cat6", title: "Ethernet Cat 6 Cable", price: 120000, specs: { type: "Cat 6", length: "3m", bandwidth: "1Gbps", color: "Blue" } },
+        {
+          slug: "hdmi-2-1",
+          title: "HDMI 2.1 Cable",
+          price: 190000,
+          specs: {
+            type: "HDMI 2.1",
+            length: "2m",
+            bandwidth: "48Gbps",
+            color: "Black",
+          },
+        },
+        {
+          slug: "displayport-1-4",
+          title: "DisplayPort 1.4 Cable",
+          price: 210000,
+          specs: {
+            type: "DisplayPort 1.4",
+            length: "2m",
+            bandwidth: "32.4Gbps",
+            color: "Black",
+          },
+        },
+        {
+          slug: "usb-c-100w",
+          title: "USB-C 100W Cable",
+          price: 160000,
+          specs: {
+            type: "USB-C",
+            length: "1.5m",
+            bandwidth: "10Gbps",
+            color: "Gray",
+          },
+        },
+        {
+          slug: "ethernet-cat6",
+          title: "Ethernet Cat 6 Cable",
+          price: 120000,
+          specs: {
+            type: "Cat 6",
+            length: "3m",
+            bandwidth: "1Gbps",
+            color: "Blue",
+          },
+        },
       ],
     },
     {
@@ -1089,10 +1397,40 @@ async function main() {
       priceStep: 50000,
       brands: ["Anker", "UGREEN", "Baseus", "Satechi", "Belkin"],
       variants: [
-        { slug: "4-in-1", title: "4-in-1 USB-C Hub", price: 390000, specs: { ports: "4", usbC: "Yes", hdmi: "No", powerDelivery: "65W" } },
-        { slug: "7-in-1", title: "7-in-1 USB-C Hub", price: 790000, specs: { ports: "7", usbC: "Yes", hdmi: "Yes", powerDelivery: "100W" } },
-        { slug: "9-in-1-dock", title: "9-in-1 Docking Hub", price: 1290000, specs: { ports: "9", usbC: "Yes", hdmi: "Yes", powerDelivery: "100W" } },
-        { slug: "compact-usb3", title: "Compact USB 3.0 Hub", price: 290000, specs: { ports: "4", usbC: "No", hdmi: "No", powerDelivery: "No" } },
+        {
+          slug: "4-in-1",
+          title: "4-in-1 USB-C Hub",
+          price: 390000,
+          specs: { ports: "4", usbC: "Yes", hdmi: "No", powerDelivery: "65W" },
+        },
+        {
+          slug: "7-in-1",
+          title: "7-in-1 USB-C Hub",
+          price: 790000,
+          specs: {
+            ports: "7",
+            usbC: "Yes",
+            hdmi: "Yes",
+            powerDelivery: "100W",
+          },
+        },
+        {
+          slug: "9-in-1-dock",
+          title: "9-in-1 Docking Hub",
+          price: 1290000,
+          specs: {
+            ports: "9",
+            usbC: "Yes",
+            hdmi: "Yes",
+            powerDelivery: "100W",
+          },
+        },
+        {
+          slug: "compact-usb3",
+          title: "Compact USB 3.0 Hub",
+          price: 290000,
+          specs: { ports: "4", usbC: "No", hdmi: "No", powerDelivery: "No" },
+        },
       ],
     },
     {
@@ -1103,10 +1441,50 @@ async function main() {
       priceStep: 40000,
       brands: ["Elgato", "Lention", "Ugreen", "Baseus", "Generic"],
       variants: [
-        { slug: "adjustable-monitor", title: "Adjustable Monitor Stand", price: 490000, specs: { maxWeight: "5kg", armLength: "30cm", rotation: "0°", material: "Steel" } },
-        { slug: "laptop-elevated", title: "Laptop Stand", price: 390000, specs: { maxWeight: "4kg", armLength: "26cm", rotation: "0°", material: "Aluminum" } },
-        { slug: "dual-monitor-arm", title: "Dual Monitor Arm", price: 1890000, specs: { maxWeight: "8kg", armLength: "79cm", rotation: "360°", material: "Aluminum" } },
-        { slug: "streaming-desk", title: "Streaming Desk Stand", price: 690000, specs: { maxWeight: "3kg", armLength: "55cm", rotation: "270°", material: "Steel" } },
+        {
+          slug: "adjustable-monitor",
+          title: "Adjustable Monitor Stand",
+          price: 490000,
+          specs: {
+            maxWeight: "5kg",
+            armLength: "30cm",
+            rotation: "0°",
+            material: "Steel",
+          },
+        },
+        {
+          slug: "laptop-elevated",
+          title: "Laptop Stand",
+          price: 390000,
+          specs: {
+            maxWeight: "4kg",
+            armLength: "26cm",
+            rotation: "0°",
+            material: "Aluminum",
+          },
+        },
+        {
+          slug: "dual-monitor-arm",
+          title: "Dual Monitor Arm",
+          price: 1890000,
+          specs: {
+            maxWeight: "8kg",
+            armLength: "79cm",
+            rotation: "360°",
+            material: "Aluminum",
+          },
+        },
+        {
+          slug: "streaming-desk",
+          title: "Streaming Desk Stand",
+          price: 690000,
+          specs: {
+            maxWeight: "3kg",
+            armLength: "55cm",
+            rotation: "270°",
+            material: "Steel",
+          },
+        },
       ],
     },
     {
@@ -1117,10 +1495,50 @@ async function main() {
       priceStep: 20000,
       brands: ["SteelSeries", "Razer", "Corsair", "Logitech", "Generic"],
       variants: [
-        { slug: "control-pad", title: "Control Mouse Pad", price: 190000, specs: { size: "Large", material: "Cloth", thickness: "2mm", rgb: "No" } },
-        { slug: "speed-pad", title: "Speed Mouse Pad", price: 240000, specs: { size: "Large", material: "Micro-weave", thickness: "3mm", rgb: "No" } },
-        { slug: "extended-pad", title: "Extended Mouse Pad", price: 390000, specs: { size: "Extended", material: "Cloth", thickness: "4mm", rgb: "No" } },
-        { slug: "rgb-pad", title: "RGB Mouse Pad", price: 1290000, specs: { size: "Large", material: "Cloth", thickness: "3.5mm", rgb: "Yes" } },
+        {
+          slug: "control-pad",
+          title: "Control Mouse Pad",
+          price: 190000,
+          specs: {
+            size: "Large",
+            material: "Cloth",
+            thickness: "2mm",
+            rgb: "No",
+          },
+        },
+        {
+          slug: "speed-pad",
+          title: "Speed Mouse Pad",
+          price: 240000,
+          specs: {
+            size: "Large",
+            material: "Micro-weave",
+            thickness: "3mm",
+            rgb: "No",
+          },
+        },
+        {
+          slug: "extended-pad",
+          title: "Extended Mouse Pad",
+          price: 390000,
+          specs: {
+            size: "Extended",
+            material: "Cloth",
+            thickness: "4mm",
+            rgb: "No",
+          },
+        },
+        {
+          slug: "rgb-pad",
+          title: "RGB Mouse Pad",
+          price: 1290000,
+          specs: {
+            size: "Large",
+            material: "Cloth",
+            thickness: "3.5mm",
+            rgb: "Yes",
+          },
+        },
       ],
     },
   ];
@@ -1143,7 +1561,9 @@ async function main() {
     );
   }
 
-  const peripheralProducts = showcaseCategoryConfigs.flatMap((config) => buildShowcaseProducts(config));
+  const peripheralProducts = showcaseCategoryConfigs.flatMap((config) =>
+    buildShowcaseProducts(config),
+  );
 
   const productSeeds = [
     ...cpuProducts.map((p) => ({
@@ -1298,57 +1718,85 @@ async function main() {
   console.log(`Total upserted product images: ${imageUpsertCount}`);
   console.log(`User role id: ${userRole.id}`);
 
-    // Seed Banks and BankAccounts for account verification demo
-    const banks = [
-      { code: "VCB", name: "Ngân hàng Vietcombank" },
-      { code: "BIDV", name: "Ngân hàng BIDV" },
-      { code: "TCB", name: "Ngân hàng Techcombank" },
-      { code: "MBB", name: "Ngân hàng MB" },
-      { code: "ACB", name: "Ngân hàng ACB" },
-      { code: "VPB", name: "Ngân hàng VP Bank" },
-      { code: "STB", name: "Ngân hàng Sacombank" },
-    ];
+  // Seed Banks and BankAccounts for account verification demo
+  const banks = [
+    { code: "VCB", name: "Ngân hàng Vietcombank" },
+    { code: "BIDV", name: "Ngân hàng BIDV" },
+    { code: "TCB", name: "Ngân hàng Techcombank" },
+    { code: "MBB", name: "Ngân hàng MB" },
+    { code: "ACB", name: "Ngân hàng ACB" },
+    { code: "VPB", name: "Ngân hàng VP Bank" },
+    { code: "STB", name: "Ngân hàng Sacombank" },
+  ];
 
-    for (const b of banks) {
-      await prisma.bank.upsert({
-        where: { code: b.code },
-        update: { name: b.name, isActive: true },
-        create: { code: b.code, name: b.name, isActive: true },
-      });
-    }
+  for (const b of banks) {
+    await prisma.bank.upsert({
+      where: { code: b.code },
+      update: { name: b.name, isActive: true },
+      create: { code: b.code, name: b.name, isActive: true },
+    });
+  }
 
-    // Create demo bank accounts (realistic test data)
-    const bankMap = await prisma.bank.findMany();
-    const bankByCode = bankMap.reduce((acc, cur) => ({ ...acc, [cur.code]: cur }), {});
+  // Create demo bank accounts (realistic test data)
+  const bankMap = await prisma.bank.findMany();
+  const bankByCode = bankMap.reduce(
+    (acc, cur) => ({ ...acc, [cur.code]: cur }),
+    {},
+  );
 
-    const demoAccounts = [
-      { bankCode: "MBB", accountNumber: "0397199215", accountName: "Trần Minh Huy", isVerified: true },
-      { bankCode: "VCB", accountNumber: "1234567890", accountName: "Nguyễn Văn A", isVerified: true },
-      { bankCode: "VCB", accountNumber: "9876543210", accountName: "Trần Thị B", isVerified: true },
-      { bankCode: "BIDV", accountNumber: "1111222233", accountName: "Lê Văn D", isVerified: true },
-      { bankCode: "TCB", accountNumber: "7777888899", accountName: "Võ Văn F", isVerified: true },
-    ];
+  const demoAccounts = [
+    {
+      bankCode: "MBB",
+      accountNumber: "0397199215",
+      accountName: "Trần Minh Huy",
+      isVerified: true,
+    },
+    {
+      bankCode: "VCB",
+      accountNumber: "1234567890",
+      accountName: "Nguyễn Văn A",
+      isVerified: true,
+    },
+    {
+      bankCode: "VCB",
+      accountNumber: "9876543210",
+      accountName: "Trần Thị B",
+      isVerified: true,
+    },
+    {
+      bankCode: "BIDV",
+      accountNumber: "1111222233",
+      accountName: "Lê Văn D",
+      isVerified: true,
+    },
+    {
+      bankCode: "TCB",
+      accountNumber: "7777888899",
+      accountName: "Võ Văn F",
+      isVerified: true,
+    },
+  ];
 
-    for (const acc of demoAccounts) {
-      const bank = bankByCode[acc.bankCode];
-      if (!bank) continue;
-      await prisma.bankAccount.upsert({
-        where: { accountNumber: acc.accountNumber },
-        update: {
-          accountName: acc.accountName,
-          accountHolder: acc.accountName,
-          isVerified: acc.isVerified,
-          bankId: bank.id,
-        },
-        create: {
-          bankId: bank.id,
-          accountNumber: acc.accountNumber,
-          accountName: acc.accountName,
-          accountHolder: acc.accountName,
-          isVerified: acc.isVerified,
-        },
-      });
-    }
+  for (const acc of demoAccounts) {
+    const bank = bankByCode[acc.bankCode];
+    if (!bank) continue;
+    await prisma.bankAccount.upsert({
+      where: { accountNumber: acc.accountNumber },
+      update: {
+        accountName: acc.accountName,
+        accountHolder: acc.accountName,
+        isVerified: acc.isVerified,
+        bankId: bank.id,
+      },
+      create: {
+        bankId: bank.id,
+        accountNumber: acc.accountNumber,
+        accountName: acc.accountName,
+        accountHolder: acc.accountName,
+        isVerified: acc.isVerified,
+      },
+    });
+  }
 }
 
 main()
