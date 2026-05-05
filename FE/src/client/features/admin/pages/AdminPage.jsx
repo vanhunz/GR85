@@ -1552,7 +1552,9 @@ export default function AdminPage() {
       }
 
       setAdminReviews((prev) =>
-        prev.map((item) => (Number(item.id) === reviewId ? payload : item)),
+        prev.map((item) =>
+          Number(item.id) === reviewId ? { ...item, ...(payload || {}) } : item,
+        ),
       );
       toast({
         title: shouldHide ? "Đã ẩn đánh giá" : "Đã hiện lại đánh giá",
@@ -1604,7 +1606,7 @@ export default function AdminPage() {
 
       setAdminReviews((prev) =>
         prev.map((item) =>
-          Number(item.id) === Number(reviewId) ? payload : item,
+          Number(item.id) === Number(reviewId) ? { ...item, ...(payload || {}) } : item,
         ),
       );
       toast({
@@ -1655,7 +1657,7 @@ export default function AdminPage() {
 
         setAdminReviews((prev) =>
           prev.map((item) =>
-            Number(item.id) === Number(reviewId) ? payload : item,
+            Number(item.id) === Number(reviewId) ? { ...item, ...(payload || {}) } : item,
           ),
         );
         setReviewReplyDraftById((prev) => ({
@@ -1745,20 +1747,20 @@ export default function AdminPage() {
           }),
         },
       );
-
+      const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
         throw new Error(payload?.message ?? "Không thể cập nhật trạng thái");
       }
 
-      // Cập nhật local state
+      // Server returns the updated review object — sync both list and detail view
+      const updated = payload ?? { id: review.id, threadStatus: resolved ? "RESOLVED" : "OPEN" };
       setAdminReviews((prev) =>
         prev.map((item) =>
-          Number(item.id) === Number(review.id)
-            ? { ...item, threadStatus: resolved ? "RESOLVED" : "OPEN" }
-            : item,
+          Number(item.id) === Number(review.id) ? { ...item, ...(updated || {}) } : item,
         ),
       );
+      // selectedReview is derived from `adminReviews` and `selectedReviewId`,
+      // updating `adminReviews` above is sufficient to refresh the detail view.
 
       toast({
         title: resolved ? "Đã đánh dấu xử lý" : "Đã mở lại cuộc hội thoại",
@@ -7310,40 +7312,44 @@ export default function AdminPage() {
                             key={`review-list-item-${item.id}`}
                             type="button"
                             onClick={() => setSelectedReviewId(Number(item.id))}
-                            className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
+                            className={`group w-full rounded-lg border px-3 py-2 text-left transition ${
                               isSelected
-                                ? "border-primary bg-primary/5 shadow-sm"
-                                : "border-border/70 bg-background hover:border-primary/40"
+                                ? "border-primary bg-primary/8 shadow-sm"
+                                : "border-border/50 bg-white hover:border-primary/30 hover:bg-slate-50"
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold">
-                                  {item.product?.name ?? "-"}
-                                </p>
-                                <p className="truncate text-xs text-muted-foreground">
-                                  {item.user?.fullName ??
-                                    item.user?.email ??
-                                    "Ẩn danh"}
-                                </p>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="truncate text-sm font-semibold text-slate-900">
+                                    {item.product?.name ?? "-"}
+                                  </p>
+                                  <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                                    {item.rating} ⭐
+                                  </span>
+                                </div>
+                                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span className="truncate">
+                                    {item.user?.fullName ?? item.user?.email ?? "Ẩn danh"}
+                                  </span>
+                                  <span>•</span>
+                                  <span>{formatDate(item.createdAt)}</span>
+                                </div>
                               </div>
-                              {statusBadge(
-                                item.isHidden ? "Đã ẩn" : "Đang hiển thị",
-                              )}
-                              {unread ? (
-                                <span className="ml-2 inline-flex items-center rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-semibold text-white">
-                                  Mới
-                                </span>
-                              ) : null}
+                              <div className="flex items-center gap-1.5">
+                                {statusBadge(
+                                  item.isHidden ? "Đã ẩn" : item.threadStatus === "RESOLVED" ? "Đã xử lý" : "Chưa xử lý",
+                                )}
+                                {unread ? (
+                                  <span className="inline-flex h-2 w-2 rounded-full bg-rose-500" title="Có tin nhắn mới" />
+                                ) : null}
+                              </div>
                             </div>
-                            <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                              <span className="font-semibold text-amber-600">{`${item.rating} sao`}</span>
-                              <span>•</span>
-                              <span>{formatDate(item.createdAt)}</span>
-                            </div>
-                            <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-700">
-                              {item.comment || "Không có nội dung"}
-                            </p>
+                            {item.comment && (
+                              <p className="mt-1.5 line-clamp-1 text-xs text-slate-600">
+                                {item.comment}
+                              </p>
+                            )}
                           </button>
                         );
                       })}
@@ -7351,82 +7357,84 @@ export default function AdminPage() {
 
                     <div className="min-h-[720px] rounded-2xl border border-border/60 bg-background p-5 shadow-sm">
                       {selectedReview ? (
-                        <div className="space-y-5">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="space-y-4">
+                          {/* Header with Status Info */}
+                          <div className="grid gap-2 rounded-lg border border-border/60 bg-gradient-to-r from-slate-50 to-blue-50 p-3 sm:grid-cols-4">
                             <div>
-                              <h4 className="text-lg font-semibold">
+                              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">Sản phẩm</p>
+                              <p className="mt-1.5 text-sm font-semibold text-slate-900">
                                 {selectedReview.product?.name ?? "Sản phẩm"}
-                              </h4>
-                              <p className="text-xs text-muted-foreground">
+                              </p>
+                              <p className="text-xs text-slate-600 mt-0.5">
                                 {selectedReview.user?.fullName ??
                                   selectedReview.user?.email ??
                                   "Ẩn danh"}
                               </p>
                             </div>
-                            {statusBadge(
-                              selectedReview.isHidden
-                                ? "Đã ẩn"
-                                : "Đang hiển thị",
-                            )}
-                          </div>
-
-                          <div className="rounded-xl border border-border/60 bg-secondary/30 p-4 text-sm">
-                            <p className="font-medium text-amber-600">{`${selectedReview.rating} sao`}</p>
-                            <p className="mt-1 whitespace-pre-wrap">
-                              {selectedReview.comment ||
-                                "Không có nội dung đánh giá"}
-                            </p>
-                          </div>
-
-                          {/* Review Metadata */}
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                                Tạo lúc
-                              </p>
-                              <p className="mt-1 text-sm font-medium text-slate-900">
-                                {selectedReview.createdAt
-                                  ? (() => {
-                                      const date = new Date(selectedReview.createdAt);
-                                      return date.toLocaleString("vi-VN");
-                                    })()
-                                  : "-"}
-                              </p>
+                            <div className="flex flex-col justify-between">
+                              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">Trạng thái</p>
+                              <div className="mt-1.5">
+                                {statusBadge(
+                                  selectedReview.isHidden
+                                    ? "Đã ẩn"
+                                    : selectedReview.threadStatus === "RESOLVED"
+                                      ? "Đã xử lý"
+                                      : "Chưa xử lý",
+                                )}
+                              </div>
                             </div>
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                                Cập nhật
-                              </p>
-                              <p className="mt-1 text-sm font-medium text-slate-900">
-                                {selectedReview.updatedAt
-                                  ? (() => {
-                                      const date = new Date(selectedReview.updatedAt);
-                                      return date.toLocaleString("vi-VN");
-                                    })()
-                                  : "-"}
-                              </p>
-                            </div>
-                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                                Kiểm duyệt
-                              </p>
-                              <p className="mt-1 flex items-center gap-2">
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Kiểm duyệt</p>
+                              <p className="mt-1.5 flex items-center gap-1.5">
                                 <span className={`h-2 w-2 rounded-full ${
-                                  selectedReview.isApproved
-                                    ? "bg-emerald-500"
-                                    : "bg-amber-500"
+                                  selectedReview.isApproved ? "bg-emerald-500" : "bg-amber-500"
                                 }`} />
-                                <span className="text-sm font-medium">
-                                  {selectedReview.isApproved ? "Đã duyệt" : "Chưa duyệt"}
+                                <span className="text-sm font-medium text-slate-900">
+                                  {selectedReview.isApproved ? "Đã kiểm duyệt" : "Chưa kiểm duyệt"}
                                 </span>
                               </p>
                             </div>
-                            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                                Người kiểm duyệt
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-700">Người kiểm duyệt</p>
+                              <p className="mt-1.5 text-sm font-medium text-slate-900">
+                                {selectedReview.moderator?.fullName || selectedReview.approvedBy || selectedReview.moderatedBy || "-"}
                               </p>
-                              <p className="mt-1 text-sm font-medium text-blue-900">
-                                {selectedReview.approvedBy || selectedReview.moderatedBy || "-"}
+                            </div>
+                          </div>
+
+                          {/* Rating & Comment */}
+                          <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-lg font-bold text-amber-600">{selectedReview.rating} ⭐</span>
+                              <span className="text-xs text-slate-600">{formatDate(selectedReview.createdAt)}</span>
+                            </div>
+                            <p className="text-sm text-slate-700 leading-relaxed">
+                              {selectedReview.comment || "Không có nội dung đánh giá"}
+                            </p>
+                          </div>
+
+                          {/* Timeline */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-col rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">Tạo</p>
+                              <p className="mt-1 text-xs font-medium text-slate-900">
+                                {selectedReview.createdAt
+                                  ? new Date(selectedReview.createdAt).toLocaleString("vi-VN", {
+                                      dateStyle: "short",
+                                      timeStyle: "short",
+                                    })
+                                  : "-"}
+                              </p>
+                            </div>
+                            <div className="flex flex-col rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">Cập nhật</p>
+                              <p className="mt-1 text-xs font-medium text-slate-900">
+                                {selectedReview.updatedAt
+                                  ? new Date(selectedReview.updatedAt).toLocaleString("vi-VN", {
+                                      dateStyle: "short",
+                                      timeStyle: "short",
+                                    })
+                                  : "-"}
                               </p>
                             </div>
                           </div>
@@ -7628,24 +7636,7 @@ export default function AdminPage() {
                             </div>
                           ) : null}
 
-                          <div className="grid gap-2 rounded-xl border border-border/60 bg-slate-50 p-3 text-xs text-muted-foreground md:grid-cols-2">
-                            <div>
-                              Tạo lúc: {formatDate(selectedReview.createdAt)}
-                            </div>
-                            <div>
-                              Cập nhật: {formatDate(selectedReview.updatedAt)}
-                            </div>
-                            <div>
-                              Kiểm duyệt:{" "}
-                              {selectedReview.moderatedAt
-                                ? formatDate(selectedReview.moderatedAt)
-                                : "Chưa"}
-                            </div>
-                            <div>
-                              Người kiểm duyệt:{" "}
-                              {selectedReview.moderator?.fullName ?? "-"}
-                            </div>
-                          </div>
+                          {/* duplicate metadata removed: header already shows moderation status and moderator */}
 
                           {selectedReview.hiddenReason ? (
                             <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
