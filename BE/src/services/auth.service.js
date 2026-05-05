@@ -59,83 +59,83 @@ export async function registerUser(input) {
   });
 
   try {
-    const provisionalFullName = buildProvisionalFullNameFromEmail(input.email);
+  const provisionalFullName = buildProvisionalFullNameFromEmail(input.email);
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: input.email },
-    });
+  const existingUser = await prisma.user.findUnique({
+    where: { email: input.email },
+  });
 
-    if (existingUser) {
-      throw new Error("Email đã tồn tại");
-    }
+  if (existingUser) {
+    throw new Error("Email đã tồn tại");
+  }
 
-    const userRole = await prisma.role.findFirst({
-      where: { name: { equals: "User" } },
-    });
+  const userRole = await prisma.role.findFirst({
+    where: { name: { equals: "User" } },
+  });
 
-    const passwordHash = await hash(input.password, 10);
-    const { user, verificationCode } = await prisma.$transaction(async (tx) => {
-      const createdUser = await tx.user.create({
-        data: {
-          email: input.email,
-          passwordHash,
-          fullName: provisionalFullName,
-          phone: null,
-          status: UserStatus.UNVERIFIED,
-          roleId: userRole?.id,
-          cart: {
-            create: {},
-          },
+  const passwordHash = await hash(input.password, 10);
+  const { user, verificationCode } = await prisma.$transaction(async (tx) => {
+    const createdUser = await tx.user.create({
+      data: {
+        email: input.email,
+        passwordHash,
+        fullName: provisionalFullName,
+        phone: null,
+        status: UserStatus.UNVERIFIED,
+        roleId: userRole?.id,
+        cart: {
+          create: {},
         },
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: {
-                  permission: true,
-                },
+      },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
               },
             },
           },
         },
-      });
-
-      const verificationCode = await issueEmailVerification(tx, {
-        email: createdUser.email,
-        purpose: verificationPurposes.EMAIL_VERIFY,
-      });
-
-      return { user: createdUser, verificationCode };
+      },
     });
 
-    try {
-      await sendOtpEmail({
-        email: user.email,
-        fullName: user.fullName,
-        otp: verificationCode,
-        purpose: verificationPurposes.EMAIL_VERIFY,
-      });
-    } catch (error) {
-      cooldownReservation.release();
-      await prisma.$transaction([
-        prisma.emailVerification.deleteMany({
-          where: {
-            email: user.email,
-            purpose: verificationPurposes.EMAIL_VERIFY,
-          },
-        }),
-        prisma.user.delete({ where: { id: user.id } }),
-      ]);
+    const verificationCode = await issueEmailVerification(tx, {
+      email: createdUser.email,
+      purpose: verificationPurposes.EMAIL_VERIFY,
+    });
 
-      throw new Error("Không thể gửi email xác minh. Vui lòng thử lại sau");
-    }
+    return { user: createdUser, verificationCode };
+  });
 
-    return serializeData({
-      message:
-        "Đăng ký thành công. Vui lòng kiểm tra email để xác minh tài khoản",
+  try {
+    await sendOtpEmail({
       email: user.email,
-      verificationRequired: true,
+      fullName: user.fullName,
+      otp: verificationCode,
+      purpose: verificationPurposes.EMAIL_VERIFY,
     });
+  } catch (error) {
+    cooldownReservation.release();
+    await prisma.$transaction([
+      prisma.emailVerification.deleteMany({
+        where: {
+          email: user.email,
+          purpose: verificationPurposes.EMAIL_VERIFY,
+        },
+      }),
+      prisma.user.delete({ where: { id: user.id } }),
+    ]);
+
+    throw new Error("Không thể gửi email xác minh. Vui lòng thử lại sau");
+  }
+
+  return serializeData({
+    message:
+      "Đăng ký thành công. Vui lòng kiểm tra email để xác minh tài khoản",
+    email: user.email,
+    verificationRequired: true,
+  });
   } catch (error) {
     cooldownReservation.release();
     throw error;
@@ -399,11 +399,7 @@ export async function listMyOrders(userId) {
           product: {
             include: {
               images: {
-                orderBy: [
-                  { isPrimary: "desc" },
-                  { sortOrder: "asc" },
-                  { id: "asc" },
-                ],
+                orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { id: "asc" }],
                 take: 1,
               },
             },
@@ -435,9 +431,7 @@ export async function listMyOrders(userId) {
           id: item.product.id,
           name: item.product.name,
           slug: item.product.slug,
-          imageUrl:
-            item.product.images?.[0]?.imageUrl ??
-            "/images/component-placeholder.svg",
+          imageUrl: item.product.images?.[0]?.imageUrl ?? "/images/component-placeholder.svg",
         },
       })),
     })),
@@ -866,15 +860,9 @@ function getActiveOtpCooldownSeconds(keys) {
 }
 
 function buildOtpCooldownKeys({ purpose, email, ip }) {
-  const normalizedPurpose = String(purpose ?? "OTP")
-    .trim()
-    .toUpperCase();
-  const normalizedEmail = String(email ?? "")
-    .trim()
-    .toLowerCase();
-  const normalizedIp = String(ip ?? "")
-    .trim()
-    .toLowerCase();
+  const normalizedPurpose = String(purpose ?? "OTP").trim().toUpperCase();
+  const normalizedEmail = String(email ?? "").trim().toLowerCase();
+  const normalizedIp = String(ip ?? "").trim().toLowerCase();
 
   const keys = [];
   if (normalizedEmail) {

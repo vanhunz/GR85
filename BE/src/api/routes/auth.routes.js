@@ -415,10 +415,12 @@ router.post("/notifications/mark-all-read", requireAuth, async (req, res) => {
 
 function handleRouteError(error, res) {
   if (error instanceof z.ZodError) {
-    return res.status(400).json({
-      message: "Dữ liệu yêu cầu không hợp lệ",
-      issues: error.flatten(),
-    });
+    return res
+      .status(400)
+      .json({
+        message: "Dữ liệu yêu cầu không hợp lệ",
+        issues: error.flatten(),
+      });
   }
 
   if (error instanceof Error) {
@@ -433,14 +435,14 @@ function handleRouteError(error, res) {
                 "Không thể gửi lại email xác minh. Vui lòng thử lại sau"
               ? 502
               : error.message ===
-                  "Không thể gửi lại email đặt lại mật khẩu. Vui lòng thử lại sau"
+                  "Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau"
                 ? 502
                 : error.message === "Người dùng không tồn tại"
                   ? 404
                   : error.message ===
                       "Vui lòng xác nhận email trước khi đăng nhập"
                     ? 403
-                    : error.message === "Không thể gửi email xác minh"
+                    : error.message === "Không thể gửi email xác nhận"
                       ? 502
                       : error.message ===
                           "Mã xác minh không hợp lệ hoặc đã hết hạn"
@@ -452,10 +454,7 @@ function handleRouteError(error, res) {
                             : 400;
 
     const payload = { message: error.message };
-    if (
-      typeof error.retryAfterSeconds === "number" &&
-      error.retryAfterSeconds > 0
-    ) {
+    if (typeof error.retryAfterSeconds === "number" && error.retryAfterSeconds > 0) {
       payload.retryAfterSeconds = error.retryAfterSeconds;
     }
 
