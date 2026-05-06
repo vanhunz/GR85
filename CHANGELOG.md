@@ -8,6 +8,7 @@ Mục mới nhất luôn được thêm ở cuối file.
 ## 2026-05-04 — Sửa lỗi Prisma Schema & Proxy ảnh đánh giá
 
 ### Vấn đề gặp phải
+
 - Khách hàng tạo đánh giá với ảnh bị lỗi: `Unknown argument 'isApproved'` từ Prisma
 - Ảnh đánh giá không hiển thị được trên product detail và admin panel vì thiếu proxy `/uploads`
 
@@ -39,7 +40,7 @@ Mục mới nhất luôn được thêm ở cuối file.
 
 - **BE/src/api/routes/admin.routes.js**
   - **Thay đổi gì:**
-    - Thêm route `PATCH /admin/reviews/:reviewId/images/:imageId/moderate` 
+    - Thêm route `PATCH /admin/reviews/:reviewId/images/:imageId/moderate`
     - Thêm schema validation `moderateReviewImageSchema`
   - **Lý do:** Cung cấp endpoint cho admin moderateImage
 
