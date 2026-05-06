@@ -1,12 +1,31 @@
 import { prisma } from "../db/prisma.js";
 import { serializeData } from "../utils/serialize.js";
-import { startOfDay, endOfDay, subDays, format, differenceInDays } from "date-fns";
+import {
+  startOfDay,
+  endOfDay,
+  startOfMonth,
+  startOfYear,
+  subDays,
+  format,
+  differenceInDays,
+} from "date-fns";
 
 export async function getAdminReports(filters = {}) {
-  const { startDate, endDate } = filters;
+  const { startDate, endDate, period } = filters;
 
   const start = startDate ? new Date(startDate) : subDays(new Date(), 30);
   const end = endDate ? new Date(endDate) : new Date();
+  const selectedPeriod = String(period || "day").toLowerCase();
+  const effectivePeriod =
+    selectedPeriod === "month" || selectedPeriod === "year"
+      ? selectedPeriod
+      : selectedPeriod === "custom"
+        ? differenceInDays(end, start) > 730
+          ? "year"
+          : differenceInDays(end, start) > 60
+            ? "month"
+            : "day"
+        : "day";
 
   const startIso = startOfDay(start);
   const endIso = endOfDay(end);
@@ -81,6 +100,20 @@ export async function getAdminReports(filters = {}) {
 
   const topProducts = Object.values(productSales)
     .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 10);
+
+  const topOrders = orders
+    .filter((order) => ["PROCESSING", "SHIPPING", "DELIVERED"].includes(order.orderStatus))
+    .map((order) => ({
+      id: order.id,
+      code: order.orderCode || `#${order.id}`,
+      userName: order.user?.fullName || order.user?.email || "Khách hàng",
+      totalAmount: Number(order.totalAmount || 0),
+      itemCount: Array.isArray(order.orderItems) ? order.orderItems.length : 0,
+      status: order.orderStatus,
+      createdAt: order.createdAt,
+    }))
+    .sort((a, b) => b.totalAmount - a.totalAmount)
     .slice(0, 10);
 
   const categoryChartData = Object.entries(categorySales).map(([name, value]) => ({
@@ -162,32 +195,41 @@ export async function getAdminReports(filters = {}) {
   const totalProfit = totalRevenue - totalImportCost;
 
   // 7. Biểu đồ doanh thu (Trend)
-  const isDaily = differenceInDays(endIso, startIso) <= 60;
   const revenueChartMap = {};
+
+  const getBucketInfo = (dateValue) => {
+    const sourceDate = new Date(dateValue);
+
+    if (effectivePeriod === "year") {
+      return { key: format(sourceDate, "yyyy"), sortAt: startOfYear(sourceDate) };
+    }
+
+    if (effectivePeriod === "month") {
+      return { key: format(sourceDate, "MM/yyyy"), sortAt: startOfMonth(sourceDate) };
+    }
+
+    return { key: format(sourceDate, "dd/MM/yyyy"), sortAt: startOfDay(sourceDate) };
+  };
 
   orders.forEach((order) => {
     if (!["PROCESSING", "SHIPPING", "DELIVERED"].includes(order.orderStatus)) return;
-    const dateKey = isDaily
-      ? format(order.createdAt, "dd/MM/yyyy")
-      : format(order.createdAt, "MM/yyyy");
+    const bucket = getBucketInfo(order.createdAt);
 
-    if (!revenueChartMap[dateKey]) {
-      revenueChartMap[dateKey] = { date: dateKey, revenue: 0, profit: 0 };
+    if (!revenueChartMap[bucket.key]) {
+      revenueChartMap[bucket.key] = { date: bucket.key, revenue: 0, profit: 0, sortAt: bucket.sortAt };
     }
-    revenueChartMap[dateKey].revenue += Number(order.totalAmount);
+    revenueChartMap[bucket.key].revenue += Number(order.totalAmount);
   });
 
   // Gộp chi phí nhập vào biểu đồ lợi nhuận
   batches.forEach((batch) => {
-    const dateKey = isDaily
-      ? format(batch.createdAt, "dd/MM/yyyy")
-      : format(batch.createdAt, "MM/yyyy");
+    const bucket = getBucketInfo(batch.createdAt);
 
-    if (!revenueChartMap[dateKey]) {
-      revenueChartMap[dateKey] = { date: dateKey, revenue: 0, profit: 0 };
+    if (!revenueChartMap[bucket.key]) {
+      revenueChartMap[bucket.key] = { date: bucket.key, revenue: 0, profit: 0, sortAt: bucket.sortAt };
     }
     // Lợi nhuận = Doanh thu - Chi phí nhập trong ngày đó (đơn giản hóa)
-    revenueChartMap[dateKey].profit -= Number(batch.totalCost || 0);
+    revenueChartMap[bucket.key].profit -= Number(batch.totalCost || 0);
   });
 
   // Tính lợi nhuận ròng trên biểu đồ
@@ -197,12 +239,9 @@ export async function getAdminReports(filters = {}) {
 
   // Sắp xếp biểu đồ theo thời gian
   const revenueChartData = Object.values(revenueChartMap).sort((a, b) => {
-    // Basic sorting, works better with ISO dates but good enough for display
-    const [d1, m1, y1] = a.date.split("/");
-    const [d2, m2, y2] = b.date.split("/");
-    if (y1 !== y2) return y1 - y2;
-    if (m1 !== m2) return m1 - m2;
-    return (d1 || 0) - (d2 || 0);
+    const timeA = a.sortAt ? new Date(a.sortAt).getTime() : 0;
+    const timeB = b.sortAt ? new Date(b.sortAt).getTime() : 0;
+    return timeA - timeB;
   });
 
   return serializeData({
@@ -212,6 +251,9 @@ export async function getAdminReports(filters = {}) {
       successOrders,
       cancelledOrders,
       averageOrderValue,
+    },
+    rankings: {
+      topOrders,
     },
     products: {
       topSelling: topProducts,
@@ -235,5 +277,6 @@ export async function getAdminReports(filters = {}) {
     charts: {
       revenueTrend: revenueChartData,
     },
+    period: effectivePeriod,
   });
 }

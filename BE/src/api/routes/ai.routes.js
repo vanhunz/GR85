@@ -17,7 +17,6 @@ const recommendSchema = z.object({
   targetCategories: z.array(z.string()).optional().nullable(),
   preferredBrands: z.array(z.string()).optional().default([]),
   allowUsed: z.boolean().optional().default(false),
-  pcComponentsOnly: z.boolean().optional().default(false), // Thêm tham số mới
 });
 
 const chatSchema = z.object({

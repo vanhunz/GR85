@@ -1,4 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { format, subDays } from "date-fns";
 import {
   Activity,
   AlertCircle,
@@ -46,6 +47,11 @@ import { useToast } from "@/hooks/use-toast";
 import { AdminAIPanel } from "@/client/features/admin/components/AdminAIPanel.jsx";
 import { AdminChatPanel } from "@/client/features/admin/components/AdminChatPanel.jsx";
 import { CategoryManagementPanel } from "@/client/features/admin/components/CategoryManagementPanel.jsx";
+import { AdminReportsPanel } from "@/client/features/admin/components/AdminReportsPanel.jsx";
+import { RevenueDetailPage } from "@/client/features/admin/pages/RevenueDetailPage.jsx";
+import { ProfitDetailPage } from "@/client/features/admin/pages/ProfitDetailPage.jsx";
+import { OrdersDetailPage } from "@/client/features/admin/pages/OrdersDetailPage.jsx";
+import { CancelledDetailPage } from "@/client/features/admin/pages/CancelledDetailPage.jsx";
 import { connectChatSocket } from "@/client/features/chat/data/chat.socket.js";
 import {
   BarChart,
@@ -607,6 +613,12 @@ export default function AdminPage() {
   const { token, user, setSession, isAuthenticated, isHydrated } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [detailView, setDetailView] = useState(null); // null | "revenue" | "profit" | "orders" | "cancelled"
+  const [reportDateRange, setReportDateRange] = useState({
+    startDate: format(subDays(new Date(), 30), "yyyy-MM-dd"),
+    endDate: format(new Date(), "yyyy-MM-dd"),
+  });
+  const [reportPeriod, setReportPeriod] = useState("day");
   const [openMenuGroups, setOpenMenuGroups] = useState(() => {
     return navGroups.reduce((accumulator, group) => {
       accumulator[group.id] = group.id === "overview";
@@ -4448,6 +4460,45 @@ export default function AdminPage() {
               </div>
             </Panel>
           </section>
+            {detailView === null ? (
+              <AdminReportsPanel 
+                onShowDetail={(type) => {
+                  setDetailView(type);
+                }}
+              />
+            ) : detailView === "revenue" ? (
+              <div className="p-6">
+                <RevenueDetailPage 
+                  onBack={() => setDetailView(null)}
+                  dateRange={reportDateRange}
+                  period={reportPeriod}
+                />
+              </div>
+            ) : detailView === "profit" ? (
+              <div className="p-6">
+                <ProfitDetailPage 
+                  onBack={() => setDetailView(null)}
+                  dateRange={reportDateRange}
+                  period={reportPeriod}
+                />
+              </div>
+            ) : detailView === "orders" ? (
+              <div className="p-6">
+                <OrdersDetailPage 
+                  onBack={() => setDetailView(null)}
+                  dateRange={reportDateRange}
+                  period={reportPeriod}
+                />
+              </div>
+            ) : detailView === "cancelled" ? (
+              <div className="p-6">
+                <CancelledDetailPage 
+                  onBack={() => setDetailView(null)}
+                  dateRange={reportDateRange}
+                  period={reportPeriod}
+                />
+              </div>
+            ) : null}
 
           <section id="users" className={sectionClassName("users")}>
             <SectionHeader
@@ -8833,6 +8884,10 @@ function normalizePermissionActions(values) {
 }
 
 function canAccessAdminTab(tabId, context = {}) {
+  if (tabId === "dashboard") {
+    return true;
+  }
+
   const permission = tabPermissionMap[tabId];
   if (!permission) {
     return true;

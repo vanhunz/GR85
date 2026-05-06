@@ -15,7 +15,7 @@ import {
   Legend,
 } from "recharts";
 import { format, subDays } from "date-fns";
-import { Download, RefreshCw, DollarSign, Package, Users, Activity } from "lucide-react";
+import { Download, RefreshCw, DollarSign, Package, Users, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,12 +23,13 @@ import { useToast } from "@/hooks/use-toast";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d", "#ffc658", "#a4de6c"];
 
-export function AdminReportsPanel() {
+export function AdminReportsPanel({ onShowDetail }) {
   const { token } = useAuth();
   const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(true);
   const [reportData, setReportData] = useState(null);
+  const [period, setPeriod] = useState("day");
   
   const [dateRange, setDateRange] = useState({
     startDate: format(subDays(new Date(), 30), "yyyy-MM-dd"),
@@ -38,17 +39,20 @@ export function AdminReportsPanel() {
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const [aiMessages, setAiMessages] = useState([]);
   const [aiChatInput, setAiChatInput] = useState("");
+  const [isQuickAiThinking, setIsQuickAiThinking] = useState(false);
 
-  const analyzeWithAI = async () => {
+  const analyzeWithAI = async (customPrompt) => {
     if (!reportData) return;
     setIsAiAnalyzing(true);
     setAiMessages([]);
     try {
-      const prompt = "Bỏ qua vai trò tư vấn PC trước đó. Bây giờ bạn là một chuyên gia phân tích dữ liệu kinh doanh tài ba. Dưới đây là dữ liệu báo cáo kinh doanh của cửa hàng từ " + dateRange.startDate + " đến " + dateRange.endDate + ":\n" + JSON.stringify({
+      const prompt = customPrompt || ("Bạn là trợ lý phân tích kinh doanh cho admin. Hãy trả lời ngắn gọn, rõ ý. Dữ liệu từ " + dateRange.startDate + " đến " + dateRange.endDate + " (period: " + period + "):\n" + JSON.stringify({
         sales: reportData.sales,
+        rankings: reportData.rankings,
         profit: reportData.profit,
-        imports: reportData.imports
-      }) + "\n\nHãy phân tích tình hình kinh doanh, chỉ ra điểm mạnh, điểm yếu và đưa ra 3 lời khuyên ngắn gọn để cải thiện.";
+        imports: reportData.imports,
+        charts: reportData.charts,
+      }) + "\n\nHãy phân tích doanh thu, xu hướng, top bán chạy, top khách hàng, top đơn hàng và đưa ra 3 gợi ý hành động ngắn gọn.");
       
       const res = await fetch("/api/ai/chat-build", {
         method: "POST",
@@ -63,6 +67,18 @@ export function AdminReportsPanel() {
       toast({ title: "Lỗi phân tích AI", description: error.message, variant: "destructive" });
     } finally {
       setIsAiAnalyzing(false);
+    }
+  };
+
+  const askGrowthIdeas = async () => {
+    if (!reportData) return;
+    setIsQuickAiThinking(true);
+    try {
+      await analyzeWithAI(
+        "Bạn là chuyên gia tăng trưởng cho cửa hàng. Dựa trên dữ liệu này, hãy trả lời đúng 3 ý ngắn gọn: 1 chiến lược bán hàng, 1 gợi ý nhập hàng, 1 gợi ý gợi ý sản phẩm cho khách. Không giải thích dài."
+      );
+    } finally {
+      setIsQuickAiThinking(false);
     }
   };
 
@@ -97,7 +113,13 @@ export function AdminReportsPanel() {
   const fetchReports = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/reports?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`, {
+      const params = new URLSearchParams({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+        period,
+      });
+
+      const res = await fetch(`/api/admin/reports?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -117,7 +139,7 @@ export function AdminReportsPanel() {
     if (token) {
       fetchReports();
     }
-  }, [token]);
+  }, [token, dateRange.startDate, dateRange.endDate, period]);
 
   const handleExportCSV = () => {
     if (!reportData) return;
@@ -150,14 +172,28 @@ export function AdminReportsPanel() {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
   };
 
+  const topOrders = Array.isArray(reportData?.rankings?.topOrders) ? reportData.rankings.topOrders : [];
+  const topProducts = Array.isArray(reportData?.products?.topSelling) ? reportData.products.topSelling : [];
+  const topCustomers = Array.isArray(reportData?.customers?.topVIP) ? reportData.customers.topVIP : [];
+
   if (isLoading && !reportData) {
     return <div className="py-20 text-center"><RefreshCw className="animate-spin h-8 w-8 mx-auto text-primary" /></div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-secondary/30 p-4 rounded-xl border border-border/50">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-4 rounded-xl border border-border/50 bg-secondary/30 p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="rounded-md border bg-background px-3 py-2 text-sm"
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+          >
+            <option value="day">Theo ngày</option>
+            <option value="month">Theo tháng</option>
+            <option value="year">Theo năm</option>
+            <option value="custom">Tự chọn</option>
+          </select>
           <Input 
             type="date" 
             value={dateRange.startDate} 
@@ -175,10 +211,14 @@ export function AdminReportsPanel() {
             Lọc
           </Button>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100" onClick={analyzeWithAI} disabled={isAiAnalyzing || !reportData}>
-             {isAiAnalyzing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Activity className="h-4 w-4 mr-2" />}
-             AI Phân Tích
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100" onClick={() => analyzeWithAI()} disabled={isAiAnalyzing || !reportData}>
+             {isAiAnalyzing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
+             Hỏi AI
+          </Button>
+          <Button variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100" onClick={askGrowthIdeas} disabled={isQuickAiThinking || !reportData}>
+             {isQuickAiThinking ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+             Gợi ý cách phát triển
           </Button>
           <Button variant="outline" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" />
@@ -234,45 +274,79 @@ export function AdminReportsPanel() {
 
       {reportData && (
         <>
-          {/* Tổng quan Doanh Thu & Lợi Nhuận */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-primary/5 border border-primary/20 p-5 rounded-2xl flex flex-col justify-center">
-              <div className="flex items-center gap-3 text-primary mb-2">
-                <DollarSign className="h-5 w-5" />
-                <h3 className="font-semibold text-sm uppercase tracking-wide">Doanh Thu</h3>
+          {/* Tổng quan Doanh Thu & Lợi Nhuận - Clickable Cards */}
+          <div className="space-y-2">
+            {/* Card: Doanh Thu */}
+            <button
+              onClick={() => onShowDetail && onShowDetail("revenue")}
+              className="w-full bg-card border border-border/50 rounded-2xl p-5 hover:bg-secondary/30 transition-colors text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  <div>
+                    <h3 className="font-semibold text-sm uppercase tracking-wide text-primary">Doanh Thu</h3>
+                    <p className="text-2xl font-bold text-primary mt-1">{formatCurrency(reportData.sales.totalRevenue)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{reportData.sales.successOrders} đơn thành công</p>
+                  </div>
+                </div>
+                <Activity className="h-5 w-5 text-primary opacity-50" />
               </div>
-              <p className="text-3xl font-bold text-primary">{formatCurrency(reportData.sales.totalRevenue)}</p>
-              <p className="text-xs text-muted-foreground mt-2">{reportData.sales.successOrders} đơn thành công</p>
-            </div>
-            
-            <div className="bg-green-500/5 border border-green-500/20 p-5 rounded-2xl flex flex-col justify-center">
-              <div className="flex items-center gap-3 text-green-600 mb-2">
-                <Activity className="h-5 w-5" />
-                <h3 className="font-semibold text-sm uppercase tracking-wide">Lợi Nhuận</h3>
+            </button>
+
+            {/* Card: Lợi Nhuận */}
+            <button
+              onClick={() => onShowDetail && onShowDetail("profit")}
+              className="w-full bg-card border border-border/50 rounded-2xl p-5 hover:bg-secondary/30 transition-colors text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Activity className="h-5 w-5 text-green-600" />
+                  <div>
+                    <h3 className="font-semibold text-sm uppercase tracking-wide text-green-600">Lợi Nhuận</h3>
+                    <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(reportData.profit.totalProfit)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Dựa trên chênh lệch nhập xuất</p>
+                  </div>
+                </div>
+                <Activity className="h-5 w-5 text-green-600 opacity-50" />
               </div>
-              <p className="text-3xl font-bold text-green-600">{formatCurrency(reportData.profit.totalProfit)}</p>
-              <p className="text-xs text-muted-foreground mt-2">Dựa trên chênh lệch nhập xuất</p>
-            </div>
-            
-            <div className="bg-amber-500/5 border border-amber-500/20 p-5 rounded-2xl flex flex-col justify-center">
-              <div className="flex items-center gap-3 text-amber-600 mb-2">
-                <Package className="h-5 w-5" />
-                <h3 className="font-semibold text-sm uppercase tracking-wide">Đơn hàng</h3>
+            </button>
+
+            {/* Card: Đơn Hàng */}
+            <button
+              onClick={() => onShowDetail && onShowDetail("orders")}
+              className="w-full bg-card border border-border/50 rounded-2xl p-5 hover:bg-secondary/30 transition-colors text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Package className="h-5 w-5 text-amber-600" />
+                  <div>
+                    <h3 className="font-semibold text-sm uppercase tracking-wide text-amber-600">Đơn Hàng</h3>
+                    <p className="text-2xl font-bold text-amber-600 mt-1">{reportData.sales.totalOrders}</p>
+                    <p className="text-xs text-muted-foreground mt-1">TB: {formatCurrency(reportData.sales.averageOrderValue)} / đơn</p>
+                  </div>
+                </div>
+                <Activity className="h-5 w-5 text-amber-600 opacity-50" />
               </div>
-              <p className="text-3xl font-bold text-amber-600">{reportData.sales.totalOrders}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                TB: {formatCurrency(reportData.sales.averageOrderValue)} / đơn
-              </p>
-            </div>
-            
-            <div className="bg-red-500/5 border border-red-500/20 p-5 rounded-2xl flex flex-col justify-center">
-              <div className="flex items-center gap-3 text-red-600 mb-2">
-                <RefreshCw className="h-5 w-5" />
-                <h3 className="font-semibold text-sm uppercase tracking-wide">Đơn hủy/hoàn</h3>
+            </button>
+
+            {/* Card: Đơn Hủy/Hoàn */}
+            <button
+              onClick={() => onShowDetail && onShowDetail("cancelled")}
+              className="w-full bg-card border border-border/50 rounded-2xl p-5 hover:bg-secondary/30 transition-colors text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="h-5 w-5 text-red-600" />
+                  <div>
+                    <h3 className="font-semibold text-sm uppercase tracking-wide text-red-600">Đơn Hủy/Hoàn</h3>
+                    <p className="text-2xl font-bold text-red-600 mt-1">{reportData.sales.cancelledOrders}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Tỷ lệ: {reportData.sales.totalOrders > 0 ? Math.round((reportData.sales.cancelledOrders / reportData.sales.totalOrders) * 100) : 0}%</p>
+                  </div>
+                </div>
+                <Activity className="h-5 w-5 text-red-600 opacity-50" />
               </div>
-              <p className="text-3xl font-bold text-red-600">{reportData.sales.cancelledOrders}</p>
-              <p className="text-xs text-muted-foreground mt-2">Tỷ lệ: {reportData.sales.totalOrders > 0 ? Math.round((reportData.sales.cancelledOrders / reportData.sales.totalOrders) * 100) : 0}%</p>
-            </div>
+            </button>
           </div>
 
           {/* Biểu đồ Doanh thu (Line Chart) */}
@@ -293,88 +367,138 @@ export function AdminReportsPanel() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Top Sản phẩm bán chạy */}
-            <div className="bg-card border border-border/50 p-6 rounded-2xl">
-              <h3 className="text-lg font-bold mb-6">Top Sản Phẩm Bán Chạy</h3>
-              <div className="space-y-4">
-                {reportData.products.topSelling.length > 0 ? (
-                  reportData.products.topSelling.map((product, index) => (
-                    <div key={product.id} className="flex justify-between items-center border-b border-border/30 pb-3 last:border-0 last:pb-0">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                          #{index + 1}
-                        </div>
+          <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm">
+            <h3 className="mb-6 text-lg font-bold">Bảng xếp hạng</h3>
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+              <div className="rounded-2xl border border-border/50 p-5">
+                <h4 className="mb-4 text-base font-semibold">Đơn hàng giá trị cao nhất</h4>
+                <div className="space-y-3">
+                  {topOrders.length > 0 ? (
+                    topOrders.map((order, index) => (
+                      <div
+                        key={order.id}
+                        className="flex items-center justify-between gap-3 border-b border-border/30 pb-2 last:border-0 last:pb-0"
+                      >
                         <div>
-                          <p className="font-medium text-sm line-clamp-1">{product.name}</p>
-                          <p className="text-xs text-muted-foreground">{product.quantity} đã bán</p>
+                          <p className="line-clamp-1 text-sm font-medium">
+                            #{index + 1} {order.code}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {order.userName} · {order.itemCount} món
+                          </p>
+                        </div>
+                        <p className="text-sm font-bold text-primary">
+                          {formatCurrency(order.totalAmount)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      Chưa có dữ liệu
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border/50 p-5">
+                <h4 className="mb-4 text-base font-semibold">Sản phẩm bán chạy nhất</h4>
+                <div className="space-y-4">
+                  {topProducts.length > 0 ? (
+                    topProducts.map((product, index) => (
+                      <div
+                        key={product.id}
+                        className="flex items-center justify-between border-b border-border/30 pb-3 last:border-0 last:pb-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                            #{index + 1}
+                          </div>
+                          <div>
+                            <p className="line-clamp-1 text-sm font-medium">
+                              {product.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {product.quantity} đã bán
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm font-bold text-primary">
+                          {formatCurrency(product.revenue)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      Chưa có dữ liệu
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border/50 p-5">
+                <h4 className="mb-4 text-base font-semibold">Người dùng mua nhiều nhất</h4>
+                <div className="space-y-4">
+                  {topCustomers.length > 0 ? (
+                    topCustomers.map((customer, index) => (
+                      <div
+                        key={customer.id}
+                        className="flex items-center justify-between border-b border-border/30 pb-3 last:border-0 last:pb-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-xs font-bold text-amber-600">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{customer.fullName}</p>
+                            <p className="text-xs text-muted-foreground">{customer.email}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-amber-600">
+                            {formatCurrency(customer.totalSpent)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {customer.orderCount} đơn hàng
+                          </p>
                         </div>
                       </div>
-                      <p className="font-bold text-sm text-primary">{formatCurrency(product.revenue)}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">Chưa có dữ liệu</p>
-                )}
-              </div>
-            </div>
-
-            {/* Doanh thu theo danh mục */}
-            <div className="bg-card border border-border/50 p-6 rounded-2xl">
-              <h3 className="text-lg font-bold mb-6">Doanh Thu Theo Danh Mục</h3>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={reportData.categories.revenue}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {reportData.categories.revenue.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatCurrency(value)} />
-                  </PieChart>
-                </ResponsiveContainer>
+                    ))
+                  ) : (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      Chưa có dữ liệu
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Top Khách hàng VIP */}
-            <div className="bg-card border border-border/50 p-6 rounded-2xl">
-              <h3 className="text-lg font-bold mb-6">Top 10 Khách Hàng VIP</h3>
-              <div className="space-y-4">
-                {reportData.customers.topVIP.length > 0 ? (
-                  reportData.customers.topVIP.map((customer, index) => (
-                    <div key={customer.id} className="flex justify-between items-center border-b border-border/30 pb-3 last:border-0 last:pb-0">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xs">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{customer.fullName}</p>
-                          <p className="text-xs text-muted-foreground">{customer.email}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-sm text-amber-600">{formatCurrency(customer.totalSpent)}</p>
-                        <p className="text-xs text-muted-foreground">{customer.orderCount} đơn hàng</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground text-center py-4">Chưa có dữ liệu</p>
-                )}
-              </div>
+          <div className="bg-card rounded-2xl border border-border/50 p-6">
+            <h3 className="mb-6 text-lg font-bold">Doanh Thu Theo Danh Mục</h3>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={reportData.categories.revenue}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {reportData.categories.revenue.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
+          </div>
 
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Cảnh báo tồn kho */}
             <div className="bg-card border border-border/50 p-6 rounded-2xl">
               <h3 className="text-lg font-bold text-red-500 mb-6 flex items-center gap-2">
@@ -398,6 +522,32 @@ export function AdminReportsPanel() {
                 )}
               </div>
             </div>
+
+            <div className="bg-card border border-border/50 p-6 rounded-2xl">
+              <h3 className="text-lg font-bold mb-6">Biểu đồ theo thời gian</h3>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={reportData.charts.revenueTrend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="date" tick={{fontSize: 12}} />
+                    <YAxis tickFormatter={(val) => `${val / 1000000}M`} width={80} />
+                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                    <Legend />
+                    <Line type="monotone" name="Doanh Thu" dataKey="revenue" stroke="#3b82f6" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                    <Line type="monotone" name="Lợi Nhuận" dataKey="profit" stroke="#10b981" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2">
+            <Button className="shadow-lg" onClick={() => analyzeWithAI()} disabled={!reportData || isAiAnalyzing}>
+              <Activity className="mr-2 h-4 w-4" /> Hỏi AI
+            </Button>
+            <Button variant="outline" className="bg-white shadow-lg" onClick={askGrowthIdeas} disabled={!reportData || isQuickAiThinking}>
+              <Sparkles className="mr-2 h-4 w-4" /> Gợi ý phát triển
+            </Button>
           </div>
         </>
       )}
