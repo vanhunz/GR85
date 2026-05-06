@@ -1,12 +1,17 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  AlertCircle,
   Building2,
   ChevronRight,
+  Clock,
   ClipboardList,
+  Eye,
+  EyeOff,
   ImagePlus,
   LayoutDashboard,
   MailCheck,
+  MessageCircle,
   MessageSquareMore,
   Package,
   Pencil,
@@ -699,6 +704,8 @@ export default function AdminPage() {
   const [isSavingVoucher, setIsSavingVoucher] = useState(false);
   const [editingVoucherId, setEditingVoucherId] = useState(null);
   const [deletingVoucherId, setDeletingVoucherId] = useState(null);
+  const [deleteVoucherDialogOpen, setDeleteVoucherDialogOpen] = useState(false);
+  const [pendingDeleteVoucher, setPendingDeleteVoucher] = useState(null);
   const [selectedSummaryCard, setSelectedSummaryCard] = useState("users");
   const [rolePermissionDraftByRoleId, setRolePermissionDraftByRoleId] =
     useState({});
@@ -786,6 +793,391 @@ export default function AdminPage() {
   const [deleteReviewDialogOpen, setDeleteReviewDialogOpen] = useState(false);
   const [deleteReviewReason, setDeleteReviewReason] = useState("");
   const [pendingDeleteReview, setPendingDeleteReview] = useState(null);
+  const [replyingReviewId, setReplyingReviewId] = useState(null);
+  const [reviewReplyDraftById, setReviewReplyDraftById] = useState({});
+
+  useEffect(() => {
+    const tabIdFromUrl = resolveTabIdFromLocation();
+    if (tabIdFromUrl) {
+      setActiveTab(tabIdFromUrl);
+    }
+  }, []);
+
+  useEffect(() => {
+    const currentTabFromUrl = resolveTabIdFromLocation();
+    const targetHash = `#${activeTab}`;
+
+    if (
+      currentTabFromUrl === activeTab &&
+      normalizeHash(window.location.hash || "") === targetHash
+    ) {
+      return;
+    }
+
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}${targetHash}`,
+    );
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!isHydrated || !isAuthenticated || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDashboard() {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/admin/dashboard", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(
+            payload?.message || "Không tải được dữ liệu quản trị",
+          );
+        }
+
+        const payload = await response.json();
+        if (!cancelled) {
+          setDashboard(payload);
+          setUserDraftById(
+            Object.fromEntries(
+              (payload?.users ?? []).map((item) => [
+                item.id,
+                {
+                  fullName: item.fullName ?? "",
+                  email: item.email ?? "",
+                  phone: item.phone ?? "",
+                  address: item.address ?? "",
+                  avatarUrl: item.avatarUrl ?? "",
+                  roleId: item.roleId ? String(item.roleId) : "",
+                  status: item.status ?? "ACTIVE",
+                },
+              ]),
+            ),
+          );
+          setRolePermissionDraftByRoleId(
+            Object.fromEntries(
+              (payload?.roles ?? []).map((item) => [
+                item.id,
+                Array.isArray(item.permissions) ? item.permissions : [],
+              ]),
+            ),
+          );
+        }
+
+        try {
+          const targetsResponse = await fetch("/api/admin/permission-targets", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (targetsResponse.ok) {
+            const targetsPayload = await targetsResponse.json();
+            if (!cancelled) {
+              const targets = Array.isArray(targetsPayload?.users)
+                ? targetsPayload.users
+                : Array.isArray(targetsPayload)
+                  ? targetsPayload
+                  : [];
+
+              setPermissionTargets(targets);
+              setPermissionDraftByUserId(
+                Object.fromEntries(
+                  targets.map((item) => [
+                    item.id,
+                    Array.isArray(item.permissions) ? item.permissions : [],
+                  ]),
+                ),
+              );
+
+              if (!selectedPermissionTargetId && targets.length > 0) {
+                setSelectedPermissionTargetId(String(targets[0].id));
+              }
+            }
+          }
+        } catch {
+          if (!cancelled) {
+            setPermissionTargets([]);
+          }
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setDashboard(null);
+          toast({
+            title: "Không tải được dữ liệu",
+            description:
+              error instanceof Error ? error.message : "Đã xảy ra lỗi",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadDashboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isHydrated, selectedPermissionTargetId, token, toast]);
+
+  useEffect(() => {
+    if (!isHydrated || !isAuthenticated || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCatalogMeta() {
+      try {
+        const response = await fetch("/api/products/overview");
+        if (!response.ok) {
+          throw new Error("Không tải được danh mục sản phẩm");
+        }
+
+        const payload = await response.json();
+        if (!cancelled) {
+          const categories = Array.isArray(payload.categories)
+            ? payload.categories
+            : [];
+          const products = Array.isArray(payload.products)
+            ? payload.products
+            : [];
+          const brands = Array.from(
+            new Set(
+              products
+                .map(
+                  (item) =>
+                    item?.specifications?.brand ||
+                    item?.supplier?.name ||
+                    "PC Perfect",
+                )
+                .map((item) => String(item).trim())
+                .filter(Boolean),
+            ),
+          ).sort((a, b) => a.localeCompare(b));
+
+          setCatalogCategories(categories);
+          setCatalogBrands(brands);
+
+          setProductForm((prev) => ({
+            ...prev,
+            categorySlug:
+              prev.categorySlug || String(categories[0]?.slug ?? ""),
+          }));
+        }
+      } catch {
+        if (!cancelled) {
+          setCatalogCategories([]);
+        }
+      }
+    }
+
+    loadCatalogMeta();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isHydrated, token]);
+
+  useEffect(() => {
+    if (!isHydrated || !isAuthenticated || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadManagedProducts() {
+      try {
+        const query = new URLSearchParams();
+        query.set("page", String(managedProductPage));
+        query.set("pageSize", "12");
+        if (managedProductKeyword) {
+          query.set("keyword", managedProductKeyword);
+        }
+        if (managedProductCategory !== "all") {
+          query.set("category", managedProductCategory);
+        }
+        if (managedProductBrand !== "all") {
+          query.set("brand", managedProductBrand);
+        }
+
+        const response = await fetch(`/api/products?${query.toString()}`);
+        if (!response.ok) {
+          throw new Error("Không tải được danh sách sản phẩm quản trị");
+        }
+
+        const payload = await response.json();
+        if (!cancelled) {
+          setManagedProducts(Array.isArray(payload.items) ? payload.items : []);
+          setManagedProductPagination(
+            payload.pagination ?? {
+              page: 1,
+              pageSize: 12,
+              totalItems: 0,
+              totalPages: 1,
+            },
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setManagedProducts([]);
+          setManagedProductPagination({
+            page: 1,
+            pageSize: 12,
+            totalItems: 0,
+            totalPages: 1,
+          });
+          toast({
+            title: "Không tải được sản phẩm",
+            description:
+              error instanceof Error ? error.message : "Đã xảy ra lỗi",
+            variant: "destructive",
+          });
+        }
+      }
+    }
+
+    loadManagedProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthenticated,
+    isHydrated,
+    managedProductBrand,
+    managedProductCategory,
+    managedProductKeyword,
+    managedProductPage,
+    token,
+    toast,
+  ]);
+
+  const loadDisplayOrderDraft = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
+    setIsLoadingDisplayOrder(true);
+    try {
+      const response = await fetch("/api/products/display-order", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.message ?? "Không tải được thứ tự hiển thị");
+      }
+
+      setDisplayOrderDraft(
+        (Array.isArray(payload) ? payload : []).map((item) => ({
+          id: Number(item.id),
+          name: String(item.name ?? ""),
+          displayOrder: Number(item.displayOrder ?? 9999),
+          isHomepageFeatured: Boolean(item.isHomepageFeatured),
+          stockQuantity: Number(item.stockQuantity ?? 0),
+        })),
+      );
+    } catch (error) {
+      toast({
+        title: "Không tải được thứ tự hiển thị",
+        description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingDisplayOrder(false);
+    }
+  }, [token, toast]);
+
+  useEffect(() => {
+    if (!isHydrated || !isAuthenticated || !token || activeTab !== "products") {
+      return;
+    }
+
+    loadDisplayOrderDraft();
+  }, [activeTab, isAuthenticated, isHydrated, token, loadDisplayOrderDraft]);
+
+  useEffect(() => {
+    if (!isHydrated || !isAuthenticated || !token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadOrders() {
+      try {
+        const response = await fetch("/api/orders", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          throw new Error("Không tải được danh sách đơn hàng");
+        }
+
+        const payload = await response.json();
+        if (!cancelled) {
+          setAdminOrders(Array.isArray(payload) ? payload : []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast({
+            title: "Không tải được đơn hàng",
+            description:
+              error instanceof Error ? error.message : "Đã xảy ra lỗi",
+            variant: "destructive",
+          });
+        }
+      }
+    }
+
+    loadOrders();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isHydrated, token, toast]);
+
+  const loadOrderDetail = useCallback(
+    async (orderId) => {
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/orders/${orderId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(payload?.message ?? "Không tải được chi tiết đơn");
+        }
+        setSelectedOrderDetail(payload);
+      } catch (error) {
+        toast({
+          title: "Không tải được chi tiết đơn",
+          description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
+          variant: "destructive",
+        });
+      }
+    },
+    [token, toast],
+  );
+
   useEffect(() => {
     if (!isHydrated || !isAuthenticated || !token) {
       return;
@@ -1030,6 +1422,87 @@ export default function AdminPage() {
     };
   }, [activeTab, isAuthenticated, isHydrated, token, loadAdminReviews]);
 
+  useEffect(() => {
+    if (!isHydrated || !isAuthenticated || !token || activeTab !== "returns") {
+      return;
+    }
+
+    loadAdminReturnRequests();
+  }, [activeTab, isAuthenticated, isHydrated, token, loadAdminReturnRequests]);
+
+  async function handleReturnRequestAction(request, action) {
+    if (!token || !request?.id) {
+      return;
+    }
+
+    const requestId = Number(request.id);
+    let endpoint = `/api/admin/returns/${requestId}/review`;
+    let body = { action };
+
+    if (action === "REJECT") {
+      const rejectReason = window.prompt(
+        "Nhập lý do từ chối yêu cầu trả hàng:",
+        String(request.rejectReason ?? ""),
+      );
+      if (rejectReason === null) {
+        return;
+      }
+
+      const normalizedRejectReason = String(rejectReason ?? "").trim();
+      if (!normalizedRejectReason) {
+        toast({
+          title: "Thiếu lý do từ chối",
+          description: "Vui lòng nhập lý do để từ chối yêu cầu trả hàng",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      body = { action: "REJECT", rejectReason: normalizedRejectReason };
+    } else if (action === "APPROVE") {
+      body = { action: "APPROVE" };
+    } else if (action === "SHIPPING_BACK") {
+      endpoint = `/api/admin/returns/${requestId}/shipping-back`;
+      body = null;
+    } else if (action === "RECEIVED") {
+      endpoint = `/api/admin/returns/${requestId}/received`;
+      body = null;
+    } else if (action === "REFUND") {
+      endpoint = `/api/admin/returns/${requestId}/refund`;
+      body = null;
+    }
+
+    const confirmMessage =
+      action === "APPROVE"
+        ? "Duyệt yêu cầu trả hàng này?"
+        : action === "REJECT"
+          ? "Từ chối yêu cầu trả hàng này?"
+          : action === "SHIPPING_BACK"
+            ? "Đánh dấu đơn này đang được khách gửi trả?"
+            : action === "RECEIVED"
+              ? "Xác nhận đã nhận hàng trả về?"
+              : "Xử lý hoàn tiền cho yêu cầu này?";
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setUpdatingReturnRequestId(requestId);
+    try {
+      const response = await fetch(endpoint, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          payload?.message ?? "Không thể cập nhật yêu cầu trả hàng",
+        );
       }
 
       toast({
@@ -1307,44 +1780,155 @@ export default function AdminPage() {
         description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
         variant: "destructive",
       });
+    }
+  }
+
+  async function updateOrderStatus(orderId, nextStatusOverride) {
     if (!token) {
       return;
     }
 
-    const confirmed = window.confirm(`Bạn có chắc muốn xóa đơn #${orderId}?`);
-    if (!confirmed) {
+    const targetOrder = adminOrders.find(
+      (order) => Number(order.id) === Number(orderId),
+    );
+    const nextStatus = String(nextStatusOverride ?? "")
+      .trim()
+      .toUpperCase();
+    if (!nextStatus) {
       return;
     }
 
-    setDeletingOrderId(orderId);
+    if (!targetOrder) {
+      return;
+    }
+
+    setUpdatingOrderId(orderId);
     try {
-      const response = await fetch(`/api/orders/${orderId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: nextStatus }),
       });
 
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(payload?.message ?? "Không thể xóa đơn hàng");
+        throw new Error(payload?.message ?? "Cập nhật trạng thái thất bại");
       }
 
       setAdminOrders((prev) =>
-        prev.filter((item) => Number(item.id) !== Number(orderId)),
+        prev.map((order) =>
+          order.id === orderId
+            ? {
+                ...order,
+                orderStatus: payload.orderStatus,
+                updatedAt: payload.updatedAt,
+              }
+            : order,
+        ),
       );
-      if (Number(selectedOrderDetail?.id) === Number(orderId)) {
-        setSelectedOrderDetail(null);
-      }
 
-      toast({ title: "Đã xóa đơn hàng" });
+      toast({ title: "Đã cập nhật trạng thái đơn hàng" });
+
+      if (selectedOrderDetail?.id === orderId) {
+        await loadOrderDetail(orderId);
+      }
     } catch (error) {
       toast({
-        title: "Xóa đơn hàng thất bại",
+        title: "Không thể cập nhật",
         description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
         variant: "destructive",
       });
     } finally {
-      setDeletingOrderId(null);
+      setUpdatingOrderId(null);
     }
+  }
+
+  function renderOrderActionCell(item) {
+    const orderStatus = String(item.orderStatus ?? "").toUpperCase();
+    const paymentStatus = String(item.paymentStatus ?? "").toUpperCase();
+
+    if (orderStatus === "CANCELLED") {
+      return <span className="text-xs text-destructive">Đã hủy</span>;
+    }
+
+    if (orderStatus === "DELIVERED") {
+      return <span className="text-xs text-emerald-600">Đã hoàn thành</span>;
+    }
+
+    if (orderStatus === "PENDING" && paymentStatus === "PAID") {
+      return (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs text-emerald-600">
+            Đã thanh toán, yêu cầu chuẩn bị hàng
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={updatingOrderId === item.id}
+              onClick={() => updateOrderStatus(item.id, "PROCESSING")}
+            >
+              Chuẩn bị xong
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={updatingOrderId === item.id}
+              onClick={() => updateOrderStatus(item.id, "CANCELLED")}
+            >
+              Hủy đơn
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (orderStatus === "PENDING") {
+      return (
+        <span className="text-xs text-muted-foreground">Chờ thanh toán</span>
+      );
+    }
+
+    if (orderStatus === "PROCESSING") {
+      return (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={updatingOrderId === item.id}
+            onClick={() => updateOrderStatus(item.id, "SHIPPING")}
+          >
+            Đã giao hàng
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={updatingOrderId === item.id}
+            onClick={() => updateOrderStatus(item.id, "CANCELLED")}
+          >
+            Hủy đơn
+          </Button>
+        </div>
+      );
+    }
+
+    if (orderStatus === "SHIPPING") {
+      return (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={updatingOrderId === item.id}
+          onClick={() => updateOrderStatus(item.id, "DELIVERED")}
+        >
+          Giao thành công
+        </Button>
+      );
+    }
+
+    return <span className="text-xs text-muted-foreground">-</span>;
   }
 
   async function deleteOrder(orderId) {
@@ -2610,20 +3194,22 @@ export default function AdminPage() {
   }
 
   async function deleteVoucher(item) {
-    if (!token || !item?.id) {
+    if (!item?.id) {
       return;
     }
 
-    const shouldDelete = window.confirm(
-      `Bạn có chắc muốn xóa voucher ${item.code}? Voucher đã dùng sẽ không xóa được.`,
-    );
-    if (!shouldDelete) {
+    setPendingDeleteVoucher(item);
+    setDeleteVoucherDialogOpen(true);
+  }
+
+  async function confirmDeleteVoucher() {
+    if (!token || !pendingDeleteVoucher?.id) {
       return;
     }
 
-    setDeletingVoucherId(item.id);
+    setDeletingVoucherId(pendingDeleteVoucher.id);
     try {
-      const response = await fetch(`/api/admin/coupons/${item.id}`, {
+      const response = await fetch(`/api/admin/coupons/${pendingDeleteVoucher.id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -2637,6 +3223,8 @@ export default function AdminPage() {
 
       await refreshDashboardSummary();
       toast({ title: "Đã xóa voucher" });
+      setDeleteVoucherDialogOpen(false);
+      setPendingDeleteVoucher(null);
     } catch (error) {
       toast({
         title: "Không thể xóa voucher",
@@ -3085,6 +3673,57 @@ export default function AdminPage() {
     () => selectedReview?.threadStatus === "RESOLVED",
     [selectedReview],
   );
+
+  useEffect(() => {
+    if (selectedReview) {
+      if (Number(selectedReviewId) !== Number(selectedReview.id)) {
+        setSelectedReviewId(Number(selectedReview.id));
+      }
+      return;
+    }
+
+    if (selectedReviewId !== null) {
+      setSelectedReviewId(null);
+    }
+  }, [selectedReview, selectedReviewId]);
+
+  // Keyboard navigation: Arrow Up/Down to navigate reviews, Ctrl+Enter to send reply
+  useEffect(() => {
+    if (activeTab !== "reviews") return;
+
+    function onKey(e) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!Array.isArray(filteredReviews) || filteredReviews.length === 0)
+          return;
+        const currentIndex = filteredReviews.findIndex(
+          (r) => Number(r.id) === Number(selectedReviewId),
+        );
+        let nextIndex = currentIndex;
+        if (e.key === "ArrowDown") {
+          nextIndex =
+            currentIndex < 0
+              ? 0
+              : Math.min(filteredReviews.length - 1, currentIndex + 1);
+        } else {
+          nextIndex = currentIndex < 0 ? 0 : Math.max(0, currentIndex - 1);
+        }
+        const next = filteredReviews[nextIndex];
+        if (next) setSelectedReviewId(Number(next.id));
+      }
+
+      if ((e.key === "Enter" || e.key === "\n") && (e.ctrlKey || e.metaKey)) {
+        // Ctrl+Enter to send
+        if (selectedReviewId) {
+          e.preventDefault();
+          saveReviewReply(Number(selectedReviewId));
+        }
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeTab, filteredReviews, selectedReviewId, saveReviewReply]);
 
   const filteredWarehouses = useMemo(() => {
     let filtered = warehouseOverview?.warehouses ?? dashboard?.warehouses ?? [];
@@ -6621,30 +7260,69 @@ export default function AdminPage() {
               description="Theo dõi, kiểm duyệt và phản hồi đánh giá khách hàng"
             />
             <div className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                <Panel title="Tổng đánh giá" description="Toàn bộ hệ thống">
-                  <p className="text-xl font-bold">{reviewOverview.total}</p>
-                </Panel>
-                <Panel title="Chờ phản hồi" description="Ưu tiên xử lý">
-                  <p className="text-xl font-bold text-amber-600">
-                    {reviewOverview.waitingReply}
-                  </p>
-                </Panel>
-                <Panel title="Đã ẩn" description="Nội dung vi phạm">
-                  <p className="text-xl font-bold text-slate-700">
-                    {reviewOverview.hidden}
-                  </p>
-                </Panel>
-                <Panel title="Sao thấp" description="Từ 1 đến 2 sao">
-                  <p className="text-xl font-bold text-rose-600">
-                    {reviewOverview.lowRating}
-                  </p>
-                </Panel>
-                <Panel title="24 giờ qua" description="Đánh giá mới">
-                  <p className="text-xl font-bold text-sky-600">
-                    {reviewOverview.recent24h}
-                  </p>
-                </Panel>
+              {/* Compact stats bar with quick filters */}
+              <div className="rounded-xl border border-emerald-100/60 bg-gradient-to-r from-emerald-50/80 via-white/80 to-sky-50/80 p-4 shadow-sm backdrop-blur">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Đánh giá</span>
+                  </div>
+                  <div className="h-6 w-px bg-border/40" />
+                  
+                  <Button
+                    size="sm"
+                    variant={reviewStatusFilter === "all" ? "default" : "ghost"}
+                    className={reviewStatusFilter === "all" ? "bg-emerald-600 hover:bg-emerald-700" : "hover:bg-emerald-100/50"}
+                    onClick={() => setReviewStatusFilter("all")}
+                  >
+                    <span className="font-semibold">{reviewOverview.total}</span>
+                    <span className="ml-1 text-xs">Tất cả</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant={reviewStatusFilter === "wait" ? "default" : "ghost"}
+                    className={reviewStatusFilter === "wait" ? "bg-amber-500 hover:bg-amber-600" : "hover:bg-amber-100/50"}
+                    onClick={() => setReviewStatusFilter("wait")}
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{reviewOverview.waitingReply}</span>
+                    <span className="ml-1 text-xs">Chờ</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant={reviewStatusFilter === "lowRating" ? "default" : "ghost"}
+                    className={reviewStatusFilter === "lowRating" ? "bg-rose-500 hover:bg-rose-600" : "hover:bg-rose-100/50"}
+                    onClick={() => setReviewStatusFilter("lowRating")}
+                  >
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{reviewOverview.lowRating}</span>
+                    <span className="ml-1 text-xs">Sao thấp</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant={reviewStatusFilter === "hidden" ? "default" : "ghost"}
+                    className={reviewStatusFilter === "hidden" ? "bg-slate-600 hover:bg-slate-700" : "hover:bg-slate-100/50"}
+                    onClick={() => setReviewStatusFilter("hidden")}
+                  >
+                    <EyeOff className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{reviewOverview.hidden}</span>
+                    <span className="ml-1 text-xs">Ẩn</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant={reviewStatusFilter === "recent" ? "default" : "ghost"}
+                    className={reviewStatusFilter === "recent" ? "bg-sky-500 hover:bg-sky-600" : "hover:bg-sky-100/50"}
+                    onClick={() => setReviewStatusFilter("recent")}
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                    <span className="font-semibold">{reviewOverview.recent24h}</span>
+                    <span className="ml-1 text-xs">24h</span>
+                  </Button>
+                </div>
               </div>
 
               <Panel
@@ -7311,6 +7989,121 @@ export default function AdminPage() {
                             </Button>
                             <Button
                               size="sm"
+                              variant="outline"
+                              disabled={
+                                moderatingReviewId === Number(selectedReview.id)
+                              }
+                              onClick={() =>
+                                moderateReview(
+                                  selectedReview,
+                                  !selectedReview.isHidden,
+                                )
+                              }
+                            >
+                              {moderatingReviewId === Number(selectedReview.id)
+                                ? "Đang cập nhật..."
+                                : selectedReview.isHidden
+                                  ? "Hiện đánh giá"
+                                  : "Ẩn đánh giá"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={
+                                deletingReviewId === Number(selectedReview.id)
+                              }
+                              onClick={() => removeReview(selectedReview)}
+                            >
+                              {deletingReviewId === Number(selectedReview.id)
+                                ? "Đang xóa..."
+                                : "Xóa đánh giá"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+              </Panel>
+            </div>
+          </section>
+
+          <section id="chat" className={sectionClassName("chat")}>
+            <SectionHeader
+              sectionId="chat"
+              icon={MessageSquareMore}
+              title="Chat khách hàng"
+              description="Phòng chat mới nhất"
+            />
+            <AdminChatPanel token={token} currentUser={user} toast={toast} />
+          </section>
+
+          <section id="ai-build" className={sectionClassName("ai-build")}>
+            <SectionHeader
+              sectionId="ai-build"
+              icon={Sparkles}
+              title="Cấu hình AI"
+              description="Build được lưu gần đây"
+            />
+            <Panel
+              title="Build đã lưu"
+              description="Dữ liệu trực tiếp từ bảng AI_Saved_Builds"
+            >
+              <DataTable
+                columns={["Tên build", "Chủ sở hữu", "Tổng giá", "Số món"]}
+                rows={(dashboard?.aiBuilds ?? []).map((item) => [
+                  item.buildName,
+                  item.owner,
+                  formatMoney(item.totalPrice),
+                  String(item.itemCount),
+                ])}
+              />
+            </Panel>
+          </section>
+
+          <section
+            id="verification"
+            className={sectionClassName("verification")}
+          >
+            <SectionHeader
+              sectionId="verification"
+              icon={MailCheck}
+              title="Xác thực email"
+              description="Danh sách OTP gần đây"
+            />
+            <Panel
+              title="Email verification queue"
+              description="Dữ liệu trực tiếp từ bảng Email_Verifications"
+            >
+              <DataTable
+                columns={[
+                  "Email",
+                  "OTP",
+                  "Mục đích",
+                  "Tạo lúc",
+                  "Hết hạn",
+                  "Trạng thái",
+                ]}
+                rows={(dashboard?.emailVerifications ?? []).map((item) => [
+                  item.email,
+                  item.otp,
+                  formatEnum(item.purpose),
+                  formatDate(item.createdAt),
+                  formatDate(item.expiredAt),
+                  statusBadge(item.usedAt ? "Đã dùng" : "Đang chờ"),
+                ])}
+              />
+            </Panel>
+          </section>
+
+          <section id="roles" className={sectionClassName("roles")}>
+            <SectionHeader
+              sectionId="roles"
+              icon={ShieldCheck}
+              title="Phân quyền"
+              description="Chọn tài khoản nhân viên và tick đúng chức năng được phép hiển thị"
+              showPill={false}
+            />
             <Panel
               title="Chọn tài khoản"
               description="Tài khoản admin@gmail.com luôn có toàn bộ quyền"
@@ -7497,6 +8290,37 @@ export default function AdminPage() {
                 disabled={deletingReviewId === pendingDeleteReview?.id}
               >
                 {deletingReviewId === pendingDeleteReview?.id ? "Đang xóa..." : "Xóa"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Voucher Dialog */}
+        <Dialog open={deleteVoucherDialogOpen} onOpenChange={setDeleteVoucherDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Xóa voucher</DialogTitle>
+              <DialogDescription>
+                Bạn có chắc muốn xóa voucher <strong>{pendingDeleteVoucher?.code}</strong>? Voucher đã dùng sẽ được gỡ khỏi các đơn hàng trước khi xóa.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeleteVoucherDialogOpen(false);
+                  setPendingDeleteVoucher(null);
+                }}
+                disabled={deletingVoucherId === pendingDeleteVoucher?.id}
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteVoucher}
+                disabled={deletingVoucherId === pendingDeleteVoucher?.id}
+              >
+                {deletingVoucherId === pendingDeleteVoucher?.id ? "Đang xóa..." : "Xóa"}
               </Button>
             </div>
           </DialogContent>

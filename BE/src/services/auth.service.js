@@ -16,83 +16,126 @@ import { adminPermissionCatalog } from "./admin.service.js";
 const defaultUserPermissions = ["place_order", "save_build", "send_review"];
 const SUPER_ADMIN_EMAIL = "admin@gmail.com";
 const OTP_SEND_COOLDOWN_SECONDS = 90;
-  const provisionalFullName = buildProvisionalFullNameFromEmail(input.email);
+const verificationPurposes = {
+  EMAIL_VERIFY: "EMAIL_VERIFY",
+  PASSWORD_RESET: "PASSWORD_RESET",
+};
+const otpSendCooldownState = new Map();
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email: input.email },
-  });
-
-  if (existingUser) {
-    throw new Error("Email đã tồn tại");
+class OtpCooldownError extends Error {
+  constructor(message, retryAfterSeconds) {
+    super(message);
+    this.name = "OtpCooldownError";
+    this.statusCode = 429;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
+}
 
-  const userRole = await prisma.role.findFirst({
-    where: { name: { equals: "User" } },
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {
+  // Ignore when runtime does not support setting DNS result order.
+}
+
+const mailTransport = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  family: 4,
+  auth: {
+    user: env.EMAIL,
+    pass: env.APP_PASSWORD.replace(/\s+/g, ""),
+  },
+  tls: {
+    servername: "smtp.gmail.com",
+  },
+});
+
+export async function registerUser(input) {
+  const cooldownReservation = reserveOtpSendCooldown({
+    purpose: verificationPurposes.EMAIL_VERIFY,
+    email: input.email,
+    ip: input.ip,
   });
 
-  const passwordHash = await hash(input.password, 10);
-  const { user, verificationCode } = await prisma.$transaction(async (tx) => {
-    const createdUser = await tx.user.create({
-      data: {
-        email: input.email,
-        passwordHash,
-        fullName: provisionalFullName,
-        phone: null,
-        status: UserStatus.UNVERIFIED,
-        roleId: userRole?.id,
-        cart: {
-          create: {},
+  try {
+    const provisionalFullName = buildProvisionalFullNameFromEmail(input.email);
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: input.email },
+    });
+
+    if (existingUser) {
+      throw new Error("Email đã tồn tại");
+    }
+
+    const userRole = await prisma.role.findFirst({
+      where: { name: { equals: "User" } },
+    });
+
+    const passwordHash = await hash(input.password, 10);
+    const { user, verificationCode } = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          email: input.email,
+          passwordHash,
+          fullName: provisionalFullName,
+          phone: null,
+          status: UserStatus.UNVERIFIED,
+          roleId: userRole?.id,
+          cart: {
+            create: {},
+          },
         },
-      },
-      include: {
-        role: {
-          include: {
-            permissions: {
-              include: {
-                permission: true,
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true,
+                },
               },
             },
           },
         },
-      },
+      });
+
+      const verificationCode = await issueEmailVerification(tx, {
+        email: createdUser.email,
+        purpose: verificationPurposes.EMAIL_VERIFY,
+      });
+
+      return { user: createdUser, verificationCode };
     });
 
-    const verificationCode = await issueEmailVerification(tx, {
-      email: createdUser.email,
-      purpose: verificationPurposes.EMAIL_VERIFY,
-    });
+    try {
+      await sendOtpEmail({
+        email: user.email,
+        fullName: user.fullName,
+        otp: verificationCode,
+        purpose: verificationPurposes.EMAIL_VERIFY,
+      });
+    } catch (error) {
+      cooldownReservation.release();
+      await prisma.$transaction([
+        prisma.emailVerification.deleteMany({
+          where: {
+            email: user.email,
+            purpose: verificationPurposes.EMAIL_VERIFY,
+          },
+        }),
+        prisma.user.delete({ where: { id: user.id } }),
+      ]);
 
-    return { user: createdUser, verificationCode };
-  });
+      throw new Error("Không thể gửi email xác minh. Vui lòng thử lại sau");
+    }
 
-  try {
-    await sendOtpEmail({
+    return serializeData({
+      message:
+        "Đăng ký thành công. Vui lòng kiểm tra email để xác minh tài khoản",
       email: user.email,
-      fullName: user.fullName,
-      otp: verificationCode,
-      purpose: verificationPurposes.EMAIL_VERIFY,
+      verificationRequired: true,
     });
-  } catch (error) {
-    cooldownReservation.release();
-    await prisma.$transaction([
-      prisma.emailVerification.deleteMany({
-        where: {
-          email: user.email,
-          purpose: verificationPurposes.EMAIL_VERIFY,
-        },
-      }),
-      prisma.user.delete({ where: { id: user.id } }),
-    ]);
-
-    throw new Error("Không thể gửi email xác minh. Vui lòng thử lại sau");
-  }
-
-  return serializeData({
-    message:
-      "Đăng ký thành công. Vui lòng kiểm tra email để xác minh tài khoản",
-    email: user.email,
-    verificationRequired: true,
-  });
   } catch (error) {
     cooldownReservation.release();
     throw error;
@@ -356,7 +399,11 @@ export async function listMyOrders(userId) {
           product: {
             include: {
               images: {
-                orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { id: "asc" }],
+                orderBy: [
+                  { isPrimary: "desc" },
+                  { sortOrder: "asc" },
+                  { id: "asc" },
+                ],
                 take: 1,
               },
             },
@@ -388,7 +435,9 @@ export async function listMyOrders(userId) {
           id: item.product.id,
           name: item.product.name,
           slug: item.product.slug,
-          imageUrl: item.product.images?.[0]?.imageUrl ?? "/images/component-placeholder.svg",
+          imageUrl:
+            item.product.images?.[0]?.imageUrl ??
+            "/images/component-placeholder.svg",
         },
       })),
     })),
@@ -817,9 +866,15 @@ function getActiveOtpCooldownSeconds(keys) {
 }
 
 function buildOtpCooldownKeys({ purpose, email, ip }) {
-  const normalizedPurpose = String(purpose ?? "OTP").trim().toUpperCase();
-  const normalizedEmail = String(email ?? "").trim().toLowerCase();
-  const normalizedIp = String(ip ?? "").trim().toLowerCase();
+  const normalizedPurpose = String(purpose ?? "OTP")
+    .trim()
+    .toUpperCase();
+  const normalizedEmail = String(email ?? "")
+    .trim()
+    .toLowerCase();
+  const normalizedIp = String(ip ?? "")
+    .trim()
+    .toLowerCase();
 
   const keys = [];
   if (normalizedEmail) {

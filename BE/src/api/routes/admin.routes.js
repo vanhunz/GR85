@@ -158,6 +158,7 @@ const createCouponSchema = z.object({
 });
 
 const updateCouponSchema = z.object({
+  code: z.string().min(2).max(50).optional(),
   couponScope: z.enum(["PRODUCT", "SHIPPING"]).optional(),
   discountType: z.enum(["PERCENT", "FIXED_AMOUNT"]).optional(),
   discountValue: z.number().positive().optional(),
@@ -676,6 +677,68 @@ router.post("/coupons", requireAuth, async (req, res) => {
 
     if (error instanceof Error) {
       const status = error.message.includes("already exists") ? 409 : 400;
+      return res.status(status).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: "Lỗi máy chủ không xác định" });
+  }
+});
+
+router.patch("/coupons/:couponId", requireAuth, async (req, res) => {
+  try {
+    if (!isAdminRole(req.auth.role)) {
+      return res.status(403).json({
+        message: "Chỉ quản trị viên mới có thể truy cập endpoint này",
+      });
+    }
+    if (!hasPermission(req, "admin_vouchers_manage")) {
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thực hiện chức năng này" });
+    }
+
+    const parsed = updateCouponSchema.parse(req.body ?? {});
+    const data = await updateCouponByAdmin(Number(req.params.couponId), parsed);
+    return res.json(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: "Dữ liệu yêu cầu không hợp lệ",
+        issues: error.flatten(),
+      });
+    }
+
+    if (error instanceof Error) {
+      const status = error.message.includes("exists")
+        ? 409
+        : error.message.includes("not found")
+          ? 404
+          : 400;
+      return res.status(status).json({ message: error.message });
+    }
+
+    return res.status(500).json({ message: "Lỗi máy chủ không xác định" });
+  }
+});
+
+router.delete("/coupons/:couponId", requireAuth, async (req, res) => {
+  try {
+    if (!isAdminRole(req.auth.role)) {
+      return res.status(403).json({
+        message: "Chỉ quản trị viên mới có thể truy cập endpoint này",
+      });
+    }
+    if (!hasPermission(req, "admin_vouchers_manage")) {
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thực hiện chức năng này" });
+    }
+
+    const data = await deleteCouponByAdmin(Number(req.params.couponId));
+    return res.json(data);
+  } catch (error) {
+    if (error instanceof Error) {
+      const status = error.message.includes("not found") ? 404 : 400;
       return res.status(status).json({ message: error.message });
     }
 

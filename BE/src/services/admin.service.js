@@ -586,7 +586,6 @@ export async function moderateReviewImageByAdmin(
   return serializeData(mapAdminReview(updated));
 }
 
-
 export async function replyReviewByAdmin(
   adminUserId,
   reviewIdInput,
@@ -1492,6 +1491,20 @@ export async function updateCouponByAdmin(couponId, input) {
 
   const data = {};
 
+  if (input.code !== undefined) {
+    const code = String(input.code ?? "").trim().toUpperCase();
+    if (!code) {
+      throw new Error("Coupon code is required");
+    }
+
+    const existing = await prisma.coupon.findUnique({ where: { code } });
+    if (existing && Number(existing.id) !== id) {
+      throw new Error("Coupon code already exists");
+    }
+
+    data.code = code;
+  }
+
   if (input.couponScope !== undefined) {
     const couponScope = String(input.couponScope ?? "")
       .trim()
@@ -1939,7 +1952,10 @@ function mapAdminReview(review, imageModeratorMap = {}) {
           moderatedBy: image.moderatedBy ?? null,
           moderatedByName:
             image.moderatedBy && imageModeratorMap[String(image.moderatedBy)]
-              ? String(imageModeratorMap[String(image.moderatedBy)].fullName || imageModeratorMap[String(image.moderatedBy)].email)
+              ? String(
+                  imageModeratorMap[String(image.moderatedBy)].fullName ||
+                    imageModeratorMap[String(image.moderatedBy)].email,
+                )
               : null,
           moderatedAt: image.moderatedAt ?? null,
           rejectionReason: image.rejectionReason ?? null,
