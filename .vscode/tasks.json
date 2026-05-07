@@ -1,34 +1,67 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Run BE",
-      "type": "shell",
-      "command": "npm run dev",
-      "options": {
-        "cwd": "${workspaceFolder}/BE"
-      },
-      "isBackground": true,
-      "problemMatcher": []
-    },
-    {
-      "label": "Run FE",
-      "type": "shell",
-      "command": "npm run dev",
-      "options": {
-        "cwd": "${workspaceFolder}/FE"
-      },
-      "isBackground": true,
-      "problemMatcher": []
-    },
-    {
-      "label": "Run Fullstack",
-      "dependsOn": [
-        "Run BE",
-        "Run FE"
-      ],
-      "dependsOrder": "parallel",
-      "problemMatcher": []
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run BE",
+			"type": "shell",
+			"command": "npm run dev",
+			"options": {
+				"cwd": "${workspaceFolder}/BE"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run FE",
+			"type": "shell",
+			"command": "npm run dev",
+			"options": {
+				"cwd": "${workspaceFolder}/FE"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Fullstack",
+			"dependsOn": [
+				"Run BE",
+				"Run FE"
+			],
+			"dependsOrder": "parallel",
+			"problemMatcher": []
+		},
+		{
+			"label": "Rewrite Testing XLSX VI",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"TOOLS/rewrite_testing_xlsx_vi.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Rewrite Testing XLSX VI",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"TOOLS/rewrite_testing_xlsx_vi.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Rewrite Testing XLSX VI",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"TOOLS/rewrite_testing_xlsx_vi.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
 }
