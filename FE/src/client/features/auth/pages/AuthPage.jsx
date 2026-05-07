@@ -267,9 +267,9 @@ export default function AuthPage() {
           setSession(result);
           toast({
             title: "Xác minh thành công",
-            description: "Tài khoản đã kích hoạt. Hãy cập nhật hồ sơ của bạn.",
+            description: "Tài khoản đã kích hoạt. Bạn có thể đăng nhập ngay bây giờ.",
           });
-          window.location.assign("/profile");
+          navigate("/login");
           break;
         }
         case "reset": {
@@ -387,10 +387,10 @@ export default function AuthPage() {
         setSession(result);
         toast({
           title: "Kích hoạt thành công",
-          description: "Tài khoản đã được xác minh. Hãy cập nhật hồ sơ của bạn.",
+          description: "Tài khoản đã được xác minh. Bạn có thể đăng nhập ngay bây giờ.",
         });
 
-        window.location.assign("/profile");
+        navigate("/login");
       } catch (error) {
         hasAutoVerifiedRef.current = false;
         toast({

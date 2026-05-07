@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   CircleDashed,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 
 const PAGE_SIZE = 10;
@@ -523,26 +524,25 @@ export default function BuilderPage() {
                     style={{ width: `${completionPercent}%` }}
                   />
                 </div>
-                <p className="mt-2 text-[0.72rem] text-muted-foreground">
+                <p className="mt-2 text-[0.72rem] text-muted-foreground leading-relaxed">
                   {missingPrimaryCategories.length > 0
-                    ? `Còn thiếu: ${missingPrimaryCategories.map((item) => item.name).join(", ")}`
+                    ? `Thiếu: ${missingPrimaryCategories.map((item) => item.name).join(", ")}`
                     : "Bạn đã chọn đủ linh kiện chính. Có thể thêm linh kiện phụ ở bước 2."}
                 </p>
                 {missingPrimaryCategories.length > 0 && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-2 h-7 w-full justify-between text-[0.72rem]"
+                    className="mt-2 h-7 w-full justify-between text-[0.72rem] border-primary/20 text-primary hover:bg-primary/5"
                     onClick={jumpToNextMissingPrimary}
                   >
-                    Chọn linh kiện còn thiếu tiếp theo
+                    Chọn linh kiện còn thiếu
                     <ArrowRight className="h-3 w-3" />
                   </Button>
                 )}
               </div>
 
-
-              <div className="grid max-h-[38vh] grid-cols-2 gap-1 overflow-y-auto pr-1 lg:max-h-none">
+              <div className="grid grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto pr-1 lg:max-h-none homepage-sidebar">
                 {displayCategories.map((cat) => {
                   const isAccessoryGroup = cat.id === ACCESSORY_GROUP_ID;
                   const component = isAccessoryGroup ? null : currentBuild.components[cat.id];
@@ -553,10 +553,9 @@ export default function BuilderPage() {
                     <button
                       key={cat.id}
                       type="button"
-                      title={cat.name}
-                      className={`w-full rounded-xl border px-2 py-1.5 text-left transition-all duration-300 ${isActive
-                        ? "border-primary bg-primary/5 shadow-[0_10px_24px_hsl(var(--primary)/0.12)]"
-                        : "border-border/50 hover:border-primary/50 hover:bg-primary/5"
+                      className={`relative flex flex-col items-center justify-center rounded-2xl border p-3 transition-all duration-300 group ${isActive
+                        ? "border-primary bg-primary/5 shadow-inner"
+                        : "border-slate-100 bg-slate-50/50 hover:border-primary/30 hover:bg-white"
                         }`}
                       onClick={() => {
                         setSelectedCategory(cat.id);
@@ -569,58 +568,43 @@ export default function BuilderPage() {
                         }
                       }}
                     >
-                      <div className="flex items-center gap-1.5">
-                        <div
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
-                          style={{ backgroundColor: `hsl(var(--${cat.color}) / 0.2)` }}
-                        >
-                          <Icon
-                            className="h-3 w-3"
-                            style={{ color: `hsl(var(--${cat.color}))` }}
-                          />
-                        </div>
-                        {isAccessoryGroup ? (
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[0.82rem] font-medium leading-tight">
-                              {cat.name}
-                            </p>
-                            <p className="truncate text-[0.7rem] text-muted-foreground">
-                              {selectedAccessoryCategoryMeta?.name ?? "Chưa chọn loại"}
-                            </p>
-                          </div>
-                        ) : (
-                          <p className="min-w-0 flex-1 text-[0.82rem] font-medium leading-tight line-clamp-2">
-                            {cat.name}
-                          </p>
-                        )}
-                        {!isAccessoryGroup && (
-                          Boolean(component) ? (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                          ) : (
-                            <CircleDashed className="h-3.5 w-3.5 text-muted-foreground" />
-                          )
-                        )}
-                        {(isAccessoryGroup ? selectedAccessoryCount > 0 : Boolean(component)) ? (
-                          <button
-                            type="button"
-                            className="rounded-full p-0.5 text-muted-foreground hover:bg-background/80 hover:text-destructive"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (isAccessoryGroup) {
-                                ACCESSORY_CATEGORY_IDS.forEach((categoryId) => {
-                                  removeComponent(categoryId);
-                                });
-                                return;
-                              }
-                              removeComponent(cat.id);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">+</span>
-                        )}
+                      <div
+                        className={`mb-2 flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-500 ${isActive ? "bg-primary text-white scale-110 rotate-3 shadow-lg shadow-primary/30" : "bg-white text-slate-400 group-hover:text-primary group-hover:shadow-md"}`}
+                      >
+                        <Icon className="h-5 w-5" />
                       </div>
+                      
+                      <span className={`text-[10px] font-black uppercase tracking-wider text-center line-clamp-1 ${isActive ? "text-primary" : "text-slate-500"}`}>
+                        {cat.name}
+                      </span>
+
+                      {!isAccessoryGroup && (
+                        <div className="absolute top-1.5 right-1.5">
+                          {Boolean(component) ? (
+                            <CheckCircle2 className="h-4 w-4 text-primary animate-in zoom-in duration-300" />
+                          ) : (
+                            <CircleDashed className="h-4 w-4 text-slate-200" />
+                          )}
+                        </div>
+                      )}
+                      
+                      {((isAccessoryGroup ? selectedAccessoryCount > 0 : Boolean(component))) && (
+                        <div 
+                          className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (isAccessoryGroup) {
+                              ACCESSORY_CATEGORY_IDS.forEach((categoryId) => {
+                                removeComponent(categoryId);
+                              });
+                              return;
+                            }
+                            removeComponent(cat.id);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -655,43 +639,50 @@ export default function BuilderPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Button
                   variant="hero"
-                  className="w-full gap-2"
+                  className="w-full py-6 text-base font-bold shadow-[0_10px_20px_hsl(var(--primary)/0.25)] transition-all hover:scale-[1.02] active:scale-[0.98] gap-3"
                   onClick={addBuildToCartHandler}
                   disabled={selectedComponents.length === 0 || isAddingToCart}
                 >
-                  <ShoppingCart className="w-4 h-4" />
-                  {isAddingToCart ? "Đang thêm combo..." : "Thêm vào giỏ hàng"}
+                  {isAddingToCart ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="w-5 h-5" />
+                  )}
+                  {isAddingToCart ? "Đang xử lý..." : "Thêm vào giỏ hàng"}
                 </Button>
-                <Button
-                  variant="destructive"
-                  className="w-full gap-2"
-                  onClick={clearBuild}
-                  disabled={selectedComponents.length === 0}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Xóa combo
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={exportBuildExcel}
-                  disabled={selectedComponents.length === 0}
-                >
-                  <Download className="w-4 h-4" />
-                  Xuất Excel
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={exportBuildPdf}
-                  disabled={selectedComponents.length === 0}
-                >
-                  <Download className="w-4 h-4" />
-                  Xuất PDF
-                </Button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-10 text-xs border-border/60 hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30 gap-2"
+                    onClick={clearBuild}
+                    disabled={selectedComponents.length === 0}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Xóa tất cả
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-10 text-xs border-border/60 hover:bg-primary/5 hover:text-primary hover:border-primary/30 gap-2"
+                    onClick={exportBuildExcel}
+                    disabled={selectedComponents.length === 0}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Tải Excel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-10 text-xs border-border/60 hover:bg-primary/5 hover:text-primary hover:border-primary/30 gap-2 col-span-2"
+                    onClick={exportBuildPdf}
+                    disabled={selectedComponents.length === 0}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Xuất bản PDF
+                  </Button>
+                </div>
               </div>
             </Card>
 
