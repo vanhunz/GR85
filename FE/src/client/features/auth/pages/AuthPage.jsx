@@ -34,62 +34,62 @@ import { authApi } from "../data/auth.api";
 
 const modeConfig = {
   login: {
-    badge: "Đăng nhập hôm nay",
-    title: "Đăng nhập vào TechBuiltAI",
-    description: "Tiếp tục mua sắm và theo dõi đơn hàng.",
-    submit: "Đăng nhập",
+    badge: "─É─âng nhß║¡p hß╗ç thß╗æng",
+    title: "─É─âng nhß║¡p v├áo TechBuiltAI",
+    description: "Tiß║┐p tß╗Ñc mua sß║»m v├á theo d├╡i ─æ╞ín h├áng.",
+    submit: "─É─âng nhß║¡p",
     submitIcon: Lock,
-    helper: "Dùng email để xác minh.",
-    switchLabel: "Chưa có tài khoản?",
-    switchAction: "Đăng ký ngay",
+    helper: "D├╣ng email ─æ├ú x├íc minh.",
+    switchLabel: "Ch╞░a c├│ t├ái khoß║ún?",
+    switchAction: "─É─âng k├╜ ngay",
     switchHref: "/register",
     extraLink: {
-      label: "Quên mật khẩu?",
+      label: "Qu├¬n mß║¡t khß║⌐u?",
       href: "/forgot-password",
     },
   },
   register: {
-    badge: "Tạo tài khoản mới",
-    title: "Đăng ký tài khoản TechBuiltAI",
-    description: "Nhập email và mật khẩu, xác minh Gmail trước rồi bổ sung hộ số sau.",
-    submit: "Gửi mã xác minh",
+    badge: "Tß║ío t├ái khoß║ún mß╗¢i",
+    title: "─É─âng k├╜ t├ái khoß║ún TechBuiltAI",
+    description: "Nhß║¡p email v├á mß║¡t khß║⌐u, x├íc minh Gmail tr╞░ß╗¢c rß╗ôi bß╗ò sung hß╗ô s╞í sau.",
+    submit: "Gß╗¡i m├ú x├íc minh",
     submitIcon: MailCheck,
-    helper: "Email sẽ chứa cả mã OTP và link kích hoạt nhanh. Mật khẩu tối thiểu 8 ký tự.",
-    switchLabel: "Đã có tài khoản?",
-    switchAction: "Đăng nhập",
+    helper: "Email sß║╜ chß╗⌐a cß║ú m├ú OTP v├á link k├¡ch hoß║ít nhanh. Mß║¡t khß║⌐u tß╗æi thiß╗âu 8 k├╜ tß╗▒.",
+    switchLabel: "─É├ú c├│ t├ái khoß║ún?",
+    switchAction: "─É─âng nhß║¡p",
     switchHref: "/login",
   },
   forgot: {
-    badge: "Khôi phục mật khẩu",
-    title: "Nhận mã đặt lại mật khẩu qua Gmail",
-    description: "Nhập email để nhận mã OTP.",
-    submit: "Gửi mã đặt lại",
+    badge: "Kh├┤i phß╗Ñc mß║¡t khß║⌐u",
+    title: "Nhß║¡n m├ú ─æß║╖t lß║íi mß║¡t khß║⌐u qua Gmail",
+    description: "Nhß║¡p email ─æß╗â nhß║¡n m├ú OTP.",
+    submit: "Gß╗¡i m├ú ─æß║╖t lß║íi",
     submitIcon: RefreshCw,
-    helper: "Mã có hiệu lực trong thời gian ngắn.",
-    switchLabel: "Nhớ ra mật khẩu rồi?",
-    switchAction: "Quay lại đăng nhập",
+    helper: "M├ú c├│ hiß╗çu lß╗▒c trong thß╗¥i gian ngß║»n.",
+    switchLabel: "Nhß╗¢ ra mß║¡t khß║⌐u rß╗ôi?",
+    switchAction: "Quay lß║íi ─æ─âng nhß║¡p",
     switchHref: "/login",
   },
   verify: {
-    badge: "Xác minh email",
-    title: "Nhập mã OTP vừa gửi vào Gmail",
-    description: "Nhập mã 6 số hoặc bấm link trong email để kích hoạt tài khoản.",
-    submit: "Xác minh tài khoản",
+    badge: "X├íc minh email",
+    title: "Nhß║¡p m├ú OTP vß╗½a gß╗¡i v├áo Gmail",
+    description: "Nhß║¡p m├ú 6 sß╗æ hoß║╖c bß║Ñm link trong email ─æß╗â k├¡ch hoß║ít tß╗▒ ─æß╗Öng.",
+    submit: "X├íc minh t├ái khoß║ún",
     submitIcon: ShieldCheck,
-    helper: "Nếu chưa nhận được, hãy gửi lại mã.",
-    switchLabel: "Muốn dùng email khác?",
-    switchAction: "Đăng ký lại",
+    helper: "Nß║┐u ch╞░a nhß║¡n ─æ╞░ß╗úc, h├úy gß╗¡i lß║íi m├ú.",
+    switchLabel: "Muß╗æn d├╣ng email kh├íc?",
+    switchAction: "─É─âng k├╜ lß║íi",
     switchHref: "/register",
   },
   reset: {
-    badge: "Đặt lại mật khẩu",
-    title: "Nhập mã OTP và mật khẩu mới",
-    description: "Tạo mật khẩu mới bằng mã OTP.",
-    submit: "Đổi mật khẩu",
+    badge: "─Éß║╖t lß║íi mß║¡t khß║⌐u",
+    title: "Nhß║¡p m├ú OTP v├á mß║¡t khß║⌐u mß╗¢i",
+    description: "Tß║ío mß║¡t khß║⌐u mß╗¢i bß║▒ng m├ú OTP.",
+    submit: "─Éß╗òi mß║¡t khß║⌐u",
     submitIcon: KeyRound,
-    helper: "Nhập lại mật khẩu để xác nhận.",
-    switchLabel: "Quay lại đăng nhập",
-    switchAction: "Đăng nhập",
+    helper: "Nhß║¡p lß║íi mß║¡t khß║⌐u ─æß╗â x├íc nhß║¡n.",
+    switchLabel: "Quay lß║íi ─æ─âng nhß║¡p",
+    switchAction: "─É─âng nhß║¡p",
     switchHref: "/login",
   },
 };
@@ -167,16 +167,16 @@ export default function AuthPage() {
   const registerPasswordMatchMessage = !isRegisterPasswordMatched
     ? null
     : form.password === form.confirmPassword
-      ? "Mật khẩu khớp"
-      : "Mật khẩu chưa khớp";
+      ? "Mß║¡t khß║⌐u khß╗¢p"
+      : "Mß║¡t khß║⌐u ch╞░a khß╗¢p";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (mode === "reset" && !isResetOtpComplete) {
       toast({
-        title: "OTP chưa hoàn tất",
-        description: "Vui lòng nhập đầy đủ 6 số OTP để xác minh trước khi đặt lại mật khẩu mới.",
+        title: "OTP ch╞░a ho├án tß║Ñt",
+        description: "Vui l├▓ng nhß║¡p ─æß╗º 6 sß╗æ OTP tr╞░ß╗¢c khi ─æß║╖t mß║¡t khß║⌐u mß╗¢i.",
         variant: "destructive",
       });
       return;
@@ -184,8 +184,8 @@ export default function AuthPage() {
 
     if (mode === "reset" && !isResetOtpVerified) {
       toast({
-        title: "OTP chưa được xác minh",
-        description: "Vui lòng nhấn Xác minh OTP trước khi đặt lại Mật khẩu mới.",
+        title: "OTP ch╞░a ─æ╞░ß╗úc x├íc minh",
+        description: "Vui l├▓ng bß║Ñm X├íc minh m├ú OTP tr╞░ß╗¢c khi ─æß║╖t mß║¡t khß║⌐u mß╗¢i.",
         variant: "destructive",
       });
       return;
@@ -193,8 +193,8 @@ export default function AuthPage() {
 
     if (mode === "register" && form.password !== form.confirmPassword) {
       toast({
-        title: "Mật khẩu chưa khớp",
-        description: "Vui lòng kiểm tra lại phần Xác nhận Mật khẩu để giúp mình nhập đúng.",
+        title: "Mß║¡t khß║⌐u ch╞░a khß╗¢p",
+        description: "Bß║ín kiß╗âm tra lß║íi phß║ºn x├íc nhß║¡n mß║¡t khß║⌐u gi├║p m├¼nh nh├⌐.",
         variant: "destructive",
       });
       return;
@@ -202,8 +202,8 @@ export default function AuthPage() {
 
     if (mode === "register" && String(form.password ?? "").length < 8) {
       toast({
-        title: "Mật khẩu chưa hợp lệ",
-        description: "Mật khẩu phải có ít nhất 8 ký tự.",
+        title: "Mß║¡t khß║⌐u ch╞░a hß╗úp lß╗ç",
+        description: "Mß║¡t khß║⌐u ─æ─âng k├╜ phß║úi c├│ ├¡t nhß║Ñt 8 k├╜ tß╗▒.",
         variant: "destructive",
       });
       return;
@@ -211,8 +211,8 @@ export default function AuthPage() {
 
     if (mode === "reset" && form.password !== form.confirmPassword) {
       toast({
-        title: "Mật khẩu chưa khớp",
-        description: "Mật khẩu mới và Xác nhận Mật khẩu phải giống nhau.",
+        title: "Mß║¡t khß║⌐u ch╞░a khß╗¢p",
+        description: "Mß║¡t khß║⌐u mß╗¢i v├á x├íc nhß║¡n mß║¡t khß║⌐u phß║úi giß╗æng nhau.",
         variant: "destructive",
       });
       return;
@@ -220,8 +220,8 @@ export default function AuthPage() {
 
     if (mode === "reset" && String(form.password ?? "").length < 8) {
       toast({
-        title: "Mật khẩu mới chưa hợp lệ",
-        description: "Mật khẩu mới phải có ít nhất 8 ký tự.",
+        title: "Mß║¡t khß║⌐u mß╗¢i ch╞░a hß╗úp lß╗ç",
+        description: "Mß║¡t khß║⌐u mß╗¢i phß║úi c├│ ├¡t nhß║Ñt 8 k├╜ tß╗▒.",
         variant: "destructive",
       });
       return;
@@ -238,8 +238,8 @@ export default function AuthPage() {
           });
 
           toast({
-            title: "Gửi mã xác minh thành công",
-            description: "Kiểm tra email của bạn để xác nhận tài khoản.",
+            title: "─É├ú gß╗¡i m├ú x├íc minh",
+            description: "Kiß╗âm tra Gmail ─æß╗â lß║Ñy m├ú OTP v├á x├íc minh t├ái khoß║ún.",
           });
 
           navigate(`/verify-email?email=${encodeURIComponent(result.email)}`);
@@ -251,8 +251,8 @@ export default function AuthPage() {
           });
 
           toast({
-            title: "Gửi mã xác minh thành công",
-            description: "Kiểm tra email của bạn để đặt lại mật khẩu.",
+            title: "─É├ú gß╗¡i m├ú ─æß║╖t lß║íi mß║¡t khß║⌐u",
+            description: "Kiß╗âm tra Gmail ─æß╗â lß║Ñy m├ú OTP mß╗¢i.",
           });
 
           navigate(`/reset-password?email=${encodeURIComponent(result.email)}`);
@@ -266,8 +266,8 @@ export default function AuthPage() {
 
           setSession(result);
           toast({
-            title: "Xác minh thành công",
-            description: "Tài khoản của bạn đã được kích hoạt. Hãy cập nhật hồ sơ của bạn.",
+            title: "X├íc minh th├ánh c├┤ng",
+            description: "T├ái khoß║ún ─æ├ú k├¡ch hoß║ít. H├úy cß║¡p nhß║¡t hß╗ô s╞í cß╗ºa bß║ín.",
           });
           window.location.assign("/profile");
           break;
@@ -280,8 +280,8 @@ export default function AuthPage() {
           });
 
           toast({
-            title: "Đặt lại mật khẩu thành công",
-            description: "Bạn có thể đăng nhập với mật khẩu mới.",
+            title: "─É├ú ─æß╗òi mß║¡t khß║⌐u",
+            description: "Bß║ín c├│ thß╗â ─æ─âng nhß║¡p lß║íi bß║▒ng mß║¡t khß║⌐u mß╗¢i.",
           });
           navigate("/login");
           break;
@@ -294,16 +294,16 @@ export default function AuthPage() {
 
           setSession(result);
           toast({
-            title: "Đăng nhập thành công",
-            description: `Xin chào ${result.user.fullName ?? result.user.email}`,
+            title: "─É─âng nhß║¡p th├ánh c├┤ng",
+            description: `Xin ch├áo ${result.user.fullName ?? result.user.email}`,
           });
           window.location.assign(resolvePostLoginPath(result?.user?.role));
         }
       }
     } catch (error) {
       toast({
-        title: "Không thành công",
-        description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
+        title: "Kh├┤ng thß╗â xß╗¡ l├╜ y├¬u cß║ºu",
+        description: error instanceof Error ? error.message : "─É├ú xß║úy ra lß╗ùi",
         variant: "destructive",
       });
     } finally {
@@ -315,13 +315,13 @@ export default function AuthPage() {
     try {
       await authApi.resendVerification({ email: form.email });
       toast({
-        title: "Gửi mã xác minh thành công",
-        description: "Kiểm tra email của bạn để xác nhận tài khoản.",
+        title: "─É├ú gß╗¡i lß║íi m├ú",
+        description: "Kiß╗âm tra Gmail ─æß╗â lß║Ñy OTP mß╗¢i.",
       });
     } catch (error) {
       toast({
-        title: "Không thể gửi mã xác minh",
-        description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
+        title: "Kh├┤ng thß╗â gß╗¡i lß║íi m├ú",
+        description: error instanceof Error ? error.message : "─É├ú xß║úy ra lß╗ùi",
         variant: "destructive",
       });
     }
@@ -330,8 +330,8 @@ export default function AuthPage() {
   const handleVerifyResetOtp = async () => {
     if (!form.email || !/^\d{6}$/.test(String(form.otp ?? ""))) {
       toast({
-        title: "OTP chưa hợp lệ",
-        description: "Vui lòng nhập đúng email và 6 ký tự OTP.",
+        title: "OTP ch╞░a hß╗úp lß╗ç",
+        description: "Vui l├▓ng nhß║¡p ─æ├║ng email v├á ─æß╗º 6 sß╗æ OTP.",
         variant: "destructive",
       });
       return;
@@ -346,14 +346,14 @@ export default function AuthPage() {
 
       setIsResetOtpVerified(true);
       toast({
-        title: "OTP hợp lệ",
-        description: "Bạn có thể nhập mật khẩu mới ngay bây giờ.",
+        title: "OTP hß╗úp lß╗ç",
+        description: "Bß║ín c├│ thß╗â nhß║¡p mß║¡t khß║⌐u mß╗¢i ngay b├óy giß╗¥.",
       });
     } catch (error) {
       setIsResetOtpVerified(false);
       toast({
-        title: "Xác minh OTP thất bại",
-        description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
+        title: "X├íc minh OTP thß║Ñt bß║íi",
+        description: error instanceof Error ? error.message : "─É├ú xß║úy ra lß╗ùi",
         variant: "destructive",
       });
     } finally {
@@ -386,16 +386,16 @@ export default function AuthPage() {
 
         setSession(result);
         toast({
-          title: "Kích hoạt thành công",
-          description: "Tài khoản của bạn đã được kích hoạt. Hãy cập nhật hồ sơ của bạn.",
+          title: "K├¡ch hoß║ít th├ánh c├┤ng",
+          description: "T├ái khoß║ún ─æ├ú ─æ╞░ß╗úc x├íc minh. H├úy cß║¡p nhß║¡t hß╗ô s╞í cß╗ºa bß║ín.",
         });
 
         window.location.assign("/profile");
       } catch (error) {
         hasAutoVerifiedRef.current = false;
         toast({
-          title: "Kích hoạt thất bại",
-          description: error instanceof Error ? error.message : "Đã xảy ra lỗi",
+          title: "K├¡ch hoß║ít tß╗▒ ─æß╗Öng thß║Ñt bß║íi",
+          description: error instanceof Error ? error.message : "─É├ú xß║úy ra lß╗ùi",
           variant: "destructive",
         });
       } finally {
@@ -446,7 +446,7 @@ export default function AuthPage() {
               className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
-              Về trang chủ
+              Vß╗ü trang chß╗º
             </Link>
 
             <div className="auth-header mb-4 space-y-2">
@@ -467,25 +467,25 @@ export default function AuthPage() {
                 mode === "forgot" ||
                 mode === "verify" ||
                 mode === "reset") && (
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        className="h-11 pl-10"
-                        placeholder="yourgmail@gmail.com"
-                        value={form.email}
-                        onChange={handleChange("email")}
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      className="h-11 pl-10"
+                      placeholder="admin@pcperfect.vn"
+                      value={form.email}
+                      onChange={handleChange("email")}
+                    />
                   </div>
-                )}
+                </div>
+              )}
 
               {(mode === "login" || mode === "register") && (
                 <div className="space-y-2">
-                  <Label htmlFor="password">Mật khẩu</Label>
+                  <Label htmlFor="password">Mß║¡t khß║⌐u</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -494,7 +494,7 @@ export default function AuthPage() {
                       minLength={mode === "register" ? 8 : undefined}
                       className="h-11 pl-10 pr-11"
                       placeholder={
-                        mode === "register" ? "Tạo Mật khẩu" : "Nhập Mật khẩu"
+                        mode === "register" ? "Tß║ío mß║¡t khß║⌐u" : "Nhß║¡p mß║¡t khß║⌐u"
                       }
                       value={form.password}
                       onChange={handleChange("password")}
@@ -507,8 +507,8 @@ export default function AuthPage() {
                       onClick={() => togglePasswordVisibility("password")}
                       aria-label={
                         showPasswords.password
-                          ? "Ẩn Mật khẩu"
-                          : "Hiển Mật khẩu"
+                          ? "ß║¿n mß║¡t khß║⌐u"
+                          : "Hiß╗çn mß║¡t khß║⌐u"
                       }
                     >
                       {showPasswords.password ? (
@@ -523,7 +523,7 @@ export default function AuthPage() {
 
               {mode === "register" && (
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Xác nhận Mật khẩu</Label>
+                  <Label htmlFor="confirmPassword">X├íc nhß║¡n mß║¡t khß║⌐u</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -531,7 +531,7 @@ export default function AuthPage() {
                       type={showPasswords.confirmPassword ? "text" : "password"}
                       minLength={8}
                       className="h-11 pl-10 pr-11"
-                      placeholder="Nhập lại Mật khẩu"
+                      placeholder="Nhß║¡p lß║íi mß║¡t khß║⌐u"
                       value={form.confirmPassword}
                       onChange={handleChange("confirmPassword")}
                     />
@@ -543,8 +543,8 @@ export default function AuthPage() {
                       onClick={() => togglePasswordVisibility("confirmPassword")}
                       aria-label={
                         showPasswords.confirmPassword
-                          ? "Ẩn Mật khẩu Xác nhận"
-                          : "Hiển thị Mật khẩu Xác nhận"
+                          ? "ß║¿n mß║¡t khß║⌐u x├íc nhß║¡n"
+                          : "Hiß╗çn mß║¡t khß║⌐u x├íc nhß║¡n"
                       }
                     >
                       {showPasswords.confirmPassword ? (
@@ -556,10 +556,11 @@ export default function AuthPage() {
                   </div>
                   {registerPasswordMatchMessage ? (
                     <p
-                      className={`text-xs font-medium ${form.password === form.confirmPassword
-                        ? "text-emerald-600"
-                        : "text-red-600"
-                        }`}
+                      className={`text-xs font-medium ${
+                        form.password === form.confirmPassword
+                          ? "text-emerald-600"
+                          : "text-red-600"
+                      }`}
                     >
                       {registerPasswordMatchMessage}
                     </p>
@@ -569,7 +570,7 @@ export default function AuthPage() {
 
               {(mode === "verify" || mode === "reset") && (
                 <div className="space-y-3">
-                  <Label htmlFor="otp">Mã OTP</Label>
+                  <Label htmlFor="otp">M├ú OTP</Label>
                   <InputOTP
                     maxLength={6}
                     value={form.otp}
@@ -595,7 +596,7 @@ export default function AuthPage() {
                         !/^\d{6}$/.test(String(form.otp ?? ""))
                       }
                     >
-                      {isVerifyingResetOtp ? "Đang kiểm tra OTP..." : "Xác minh mã OTP"}
+                      {isVerifyingResetOtp ? "─Éang kiß╗âm tra OTP..." : "X├íc minh m├ú OTP"}
                     </Button>
                   ) : null}
                 </div>
@@ -603,7 +604,7 @@ export default function AuthPage() {
 
               {mode === "reset" && isResetOtpVerified && (
                 <div className="space-y-2">
-                  <Label htmlFor="password">Mật khẩu mới</Label>
+                  <Label htmlFor="password">Mß║¡t khß║⌐u mß╗¢i</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -611,7 +612,7 @@ export default function AuthPage() {
                       type={showPasswords.resetPassword ? "text" : "password"}
                       minLength={8}
                       className="h-11 pl-10 pr-11"
-                      placeholder="Nhập Mật khẩu mới"
+                      placeholder="Nhß║¡p mß║¡t khß║⌐u mß╗¢i"
                       value={form.password}
                       onChange={handleChange("password")}
                     />
@@ -623,8 +624,8 @@ export default function AuthPage() {
                       onClick={() => togglePasswordVisibility("resetPassword")}
                       aria-label={
                         showPasswords.resetPassword
-                          ? "Ẩn Mật khẩu mới"
-                          : "Hiển Mật khẩu mới"
+                          ? "ß║¿n mß║¡t khß║⌐u mß╗¢i"
+                          : "Hiß╗çn mß║¡t khß║⌐u mß╗¢i"
                       }
                     >
                       {showPasswords.resetPassword ? (
@@ -639,7 +640,7 @@ export default function AuthPage() {
 
               {mode === "reset" && isResetOtpVerified && (
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Xác nhận Mật khẩu mới</Label>
+                  <Label htmlFor="confirmPassword">X├íc nhß║¡n mß║¡t khß║⌐u mß╗¢i</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -649,7 +650,7 @@ export default function AuthPage() {
                       }
                       minLength={8}
                       className="h-11 pl-10 pr-11"
-                      placeholder="Nhập lại Mật khẩu mới"
+                      placeholder="Nhß║¡p lß║íi mß║¡t khß║⌐u mß╗¢i"
                       value={form.confirmPassword}
                       onChange={handleChange("confirmPassword")}
                     />
@@ -663,8 +664,8 @@ export default function AuthPage() {
                       }
                       aria-label={
                         showPasswords.resetConfirmPassword
-                          ? "Ẩn Mật khẩu Xác nhận mới"
-                          : "Hiển Mật khẩu Xác nhận mới"
+                          ? "ß║¿n mß║¡t khß║⌐u x├íc nhß║¡n mß╗¢i"
+                          : "Hiß╗çn mß║¡t khß║⌐u x├íc nhß║¡n mß╗¢i"
                       }
                     >
                       {showPasswords.resetConfirmPassword ? (
@@ -679,7 +680,7 @@ export default function AuthPage() {
 
               <div className="auth-helper rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-xs text-emerald-900">
                 {mode === "reset" && !isResetOtpVerified
-                  ? "Nhập OTP rồi bấm Xác minh mã OTP. Chờ mã đúng mới mở 2 ô mật khẩu mới."
+                  ? "Nhß║¡p OTP rß╗ôi bß║Ñm X├íc minh m├ú OTP. Chß╗ë m├ú ─æ├║ng mß╗¢i mß╗ƒ 2 ├┤ mß║¡t khß║⌐u mß╗¢i."
                   : pageCopy.helper}
               </div>
 
@@ -703,7 +704,7 @@ export default function AuthPage() {
               {(mode === "verify" || mode === "reset") && (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground">
-                    Mã OTP đã được gửi tới Gmail của bạn.
+                    M├ú OTP ─æ├ú ─æ╞░ß╗úc gß╗¡i tß╗¢i Gmail cß╗ºa bß║ín.
                   </p>
                   {mode === "verify" ? (
                     <Button
@@ -711,14 +712,14 @@ export default function AuthPage() {
                       variant="outline"
                       onClick={handleResend}
                     >
-                      Gửi lại mã
+                      Gß╗¡i lß║íi m├ú
                     </Button>
                   ) : (
                     <Link
                       to={`/forgot-password?email=${encodeURIComponent(form.email)}`}
                       className="text-sm font-semibold text-primary hover:underline"
                     >
-                      Gmail
+                      Gß╗¡i lß║íi m├ú
                     </Link>
                   )}
                 </div>
@@ -748,8 +749,8 @@ export default function AuthPage() {
                   className="font-semibold text-slate-700 hover:text-primary"
                 >
                   {mode === "verify"
-                    ? "Quay lại trang đăng nhập"
-                    : "Vào trang chủ sau khi xác minh"}
+                    ? "Quay lß║íi ─æ─âng nhß║¡p"
+                    : "V├áo trang chß╗º sau khi x├íc minh"}
                 </Link>
               )}
             </div>
@@ -915,7 +916,7 @@ function InteractivePcViewer() {
 
       <div className="relative mb-3 flex items-center justify-center gap-2 text-xs font-medium text-slate-700/80">
         <Sparkles className="h-4 w-4 text-primary" />
-        Kéo để xoay hình 3D
+        K├⌐o ─æß╗â xoay m├┤ h├¼nh 3D
       </div>
 
       <div className="relative mx-auto h-[320px] w-full select-none [perspective:1400px]">
@@ -939,7 +940,7 @@ function InteractivePcViewer() {
           >
             <img
               src={componentImage}
-              alt="Linh kiện PC"
+              alt="Linh kiß╗çn PC"
               draggable={false}
               className="h-full w-full object-cover object-center opacity-90"
             />
